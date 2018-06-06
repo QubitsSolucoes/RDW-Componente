@@ -9,7 +9,7 @@ Uses
      SysUtils, DB, Classes, IdGlobal, IdCoderMIME, uZlibLaz, base64, uDWConstsData;
     {$ELSE}
      {$if CompilerVersion > 21} // Delphi 2010 pra cima
-      System.SysUtils, IdGlobal, uZlibLaz, EncdDecd,
+      System.SysUtils, IdGlobal, uZlibLaz, System.NetEncoding, EncdDecd,
       {$IFDEF POSIX}
        Posix.Unistd,
       {$ENDIF}
@@ -73,7 +73,7 @@ Const
                         'Components REST DataWare Core' + #13#10 +
                         'CORE Version';
  DWSobreLicencaStatus = 'Open Source - Free Version';
- DWRelease            = '1435';
+ DWRelease            = '1440';
  DWVERSAO             = '1.3.1.' + DWRelease;
 
 Type
@@ -242,8 +242,8 @@ Var
  Utf8Stream   : TStringStream;
  Compressed   : TMemoryStream;
 Begin
- Result := False;
  {$IFDEF FPC}
+  Result := False;
   Utf8Stream := TStringStream.Create(S);
  {$ELSE}
   Utf8Stream := TStringStream.Create(S{$if CompilerVersion > 21}, TEncoding.UTF8{$IFEND});
@@ -339,8 +339,8 @@ Var
   Encoder     : TBase64DecodingStream;
  {$ENDIF}
 Begin
- Result := False;
  {$IFDEF FPC}
+  Result := False;
   Base64Stream := TStringStream.Create(S);
  {$ELSE}
   Base64Stream := TStringStream.Create(S{$if CompilerVersion > 21}, TEncoding.ANSI{$IFEND});

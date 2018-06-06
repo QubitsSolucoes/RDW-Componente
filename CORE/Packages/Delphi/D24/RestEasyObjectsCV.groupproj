@@ -75,6 +75,9 @@
         <Projects Include="..\..\..\Demos\DWClientREST\Blucosmos\getBlueCosmos.dproj">
             <Dependencies/>
         </Projects>
+        <Projects Include="..\..\..\Demos\DWClientREST\GetCEP\GetCEP.dproj">
+            <Dependencies/>
+        </Projects>
     </ItemGroup>
     <ProjectExtensions>
         <Borland.Personality>Default.Personality.12</Borland.Personality>
@@ -299,14 +302,23 @@
     <Target Name="getBlueCosmos:Make">
         <MSBuild Projects="..\..\..\Demos\DWClientREST\Blucosmos\getBlueCosmos.dproj" Targets="Make"/>
     </Target>
+    <Target Name="GetCEP">
+        <MSBuild Projects="..\..\..\Demos\DWClientREST\GetCEP\GetCEP.dproj"/>
+    </Target>
+    <Target Name="GetCEP:Clean">
+        <MSBuild Projects="..\..\..\Demos\DWClientREST\GetCEP\GetCEP.dproj" Targets="Clean"/>
+    </Target>
+    <Target Name="GetCEP:Make">
+        <MSBuild Projects="..\..\..\Demos\DWClientREST\GetCEP\GetCEP.dproj" Targets="Make"/>
+    </Target>
     <Target Name="Build">
-        <CallTarget Targets="RestDatawareCORE;RESTDWDriverFD;RESTDWDriverUNIDAC;RESTDWDriverZEOS;JSONDatasetSample;ArrayDatasetProcess;WindowsDWService;dwCGIServer;RestDWServerISAPI;RestDWServerProject;RestDWClientProject;ClientBLOB;ClientSlides;exemplounigui;FileServer;FileClient;FMX_CRUD;MassiveSample;SimpleCRUD;LoadfromJSON;ClienteFMX;getIpSample;ODataTestSample;getBlueCosmos"/>
+        <CallTarget Targets="RestDatawareCORE;RESTDWDriverFD;RESTDWDriverUNIDAC;RESTDWDriverZEOS;JSONDatasetSample;ArrayDatasetProcess;WindowsDWService;dwCGIServer;RestDWServerISAPI;RestDWServerProject;RestDWClientProject;ClientBLOB;ClientSlides;exemplounigui;FileServer;FileClient;FMX_CRUD;MassiveSample;SimpleCRUD;LoadfromJSON;ClienteFMX;getIpSample;ODataTestSample;getBlueCosmos;GetCEP"/>
     </Target>
     <Target Name="Clean">
-        <CallTarget Targets="RestDatawareCORE:Clean;RESTDWDriverFD:Clean;RESTDWDriverUNIDAC:Clean;RESTDWDriverZEOS:Clean;JSONDatasetSample:Clean;ArrayDatasetProcess:Clean;WindowsDWService:Clean;dwCGIServer:Clean;RestDWServerISAPI:Clean;RestDWServerProject:Clean;RestDWClientProject:Clean;ClientBLOB:Clean;ClientSlides:Clean;exemplounigui:Clean;FileServer:Clean;FileClient:Clean;FMX_CRUD:Clean;MassiveSample:Clean;SimpleCRUD:Clean;LoadfromJSON:Clean;ClienteFMX:Clean;getIpSample:Clean;ODataTestSample:Clean;getBlueCosmos:Clean"/>
+        <CallTarget Targets="RestDatawareCORE:Clean;RESTDWDriverFD:Clean;RESTDWDriverUNIDAC:Clean;RESTDWDriverZEOS:Clean;JSONDatasetSample:Clean;ArrayDatasetProcess:Clean;WindowsDWService:Clean;dwCGIServer:Clean;RestDWServerISAPI:Clean;RestDWServerProject:Clean;RestDWClientProject:Clean;ClientBLOB:Clean;ClientSlides:Clean;exemplounigui:Clean;FileServer:Clean;FileClient:Clean;FMX_CRUD:Clean;MassiveSample:Clean;SimpleCRUD:Clean;LoadfromJSON:Clean;ClienteFMX:Clean;getIpSample:Clean;ODataTestSample:Clean;getBlueCosmos:Clean;GetCEP:Clean"/>
     </Target>
     <Target Name="Make">
-        <CallTarget Targets="RestDatawareCORE:Make;RESTDWDriverFD:Make;RESTDWDriverUNIDAC:Make;RESTDWDriverZEOS:Make;JSONDatasetSample:Make;ArrayDatasetProcess:Make;WindowsDWService:Make;dwCGIServer:Make;RestDWServerISAPI:Make;RestDWServerProject:Make;RestDWClientProject:Make;ClientBLOB:Make;ClientSlides:Make;exemplounigui:Make;FileServer:Make;FileClient:Make;FMX_CRUD:Make;MassiveSample:Make;SimpleCRUD:Make;LoadfromJSON:Make;ClienteFMX:Make;getIpSample:Make;ODataTestSample:Make;getBlueCosmos:Make"/>
+        <CallTarget Targets="RestDatawareCORE:Make;RESTDWDriverFD:Make;RESTDWDriverUNIDAC:Make;RESTDWDriverZEOS:Make;JSONDatasetSample:Make;ArrayDatasetProcess:Make;WindowsDWService:Make;dwCGIServer:Make;RestDWServerISAPI:Make;RestDWServerProject:Make;RestDWClientProject:Make;ClientBLOB:Make;ClientSlides:Make;exemplounigui:Make;FileServer:Make;FileClient:Make;FMX_CRUD:Make;MassiveSample:Make;SimpleCRUD:Make;LoadfromJSON:Make;ClienteFMX:Make;getIpSample:Make;ODataTestSample:Make;getBlueCosmos:Make;GetCEP:Make"/>
     </Target>
     <Import Project="$(BDS)\Bin\CodeGear.Group.Targets" Condition="Exists('$(BDS)\Bin\CodeGear.Group.Targets')"/>
 </Project>
