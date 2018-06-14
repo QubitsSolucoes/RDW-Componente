@@ -76,7 +76,8 @@ Type
  TCallSendEvent = Function (EventData  : String;
                             Var Params : TDWParams;
                             EventType  : TSendEvent = sePOST;
-                            CallBack   : TCallBack  = Nil) : String Of Object;
+                            CallBack   : TCallBack  = Nil;
+                            JsonMode   : TJsonMode  = jmDataware) : String Of Object;
 
 Type
  TServerMethodClass = Class(TComponent)
@@ -422,7 +423,8 @@ Type
   Function    SendEvent(EventData  : String;
                         Var Params : TDWParams;
                         EventType  : TSendEvent = sePOST;
-                        CallBack   : TCallBack  = Nil) : String;Overload;
+                        CallBack   : TCallBack  = Nil;
+                        JsonMode   : TJsonMode  = jmDataware) : String;Overload;
   Constructor Create   (AOwner     : TComponent);Override;
   Destructor  Destroy;Override;
  Published
@@ -1797,7 +1799,8 @@ End;
 Function TRESTClientPooler.SendEvent(EventData  : String;
                                      Var Params : TDWParams;
                                      EventType  : TSendEvent = sePOST;
-                            		     CallBack   : TCallBack  = Nil) : String;
+                            		     CallBack   : TCallBack  = Nil;
+                                     JsonMode   : TJsonMode  = jmDataware) : String;
 Var
  vURL,
  vTpRequest    : String;
@@ -1838,101 +1841,115 @@ Var
     aValue     := Copy(aValue, 0, Pos(']}', aValue) -1);
    vTempValue := aValue;
    InputValue := Copy(InputValue, 0, InitPos-1) + ']}'; //Delete(InputValue, InitPos, Pos(']}', InputValue) - InitPos);
-   If (Params <> Nil) And (InputValue <> '{"PARAMS"]}') Then
+   If JsonMode = jmPureJSON Then
     Begin
-     bJsonValue := TJSONObject.ParseJSONValue(InputValue) as TJSONObject;
-     InputValue := '';
-     bJsonOBJTemp := bJsonValue.GetValue('PARAMS') as TJSONArray;
-     If bJsonOBJTemp.count > 0 Then
+{
+   If InputValue <> '' Then
+    Begin
+//     If InputValue[InitStrPos] <> InputValue[Length(InputValue) - FinalStrPos] Then
+     If InputValue[Length(InputValue) - FinalStrPos] <> ']' Then
+      InputValue := InputValue + ']';
+    End;
+}
+    End
+   Else
+    Begin
+     If (Params <> Nil) And (InputValue <> '{"PARAMS"]}') And (InputValue <> '') Then
       Begin
-       For A := 0 To bJsonOBJTemp.count -1 Do
+       bJsonValue := TJSONObject.ParseJSONValue(InputValue) as TJSONObject;
+       InputValue := '';
+       bJsonOBJTemp := bJsonValue.GetValue('PARAMS') as TJSONArray;
+       If bJsonOBJTemp.count > 0 Then
         Begin
-         bJsonOBJ :=  bJsonOBJTemp.get(A) as TJSONObject;
-         If bJsonOBJ.count = 0 Then
+         For A := 0 To bJsonOBJTemp.count -1 Do
           Begin
-//           FreeAndNil(bJsonOBJ);
-           Continue;
-          End;
-         If GetObjectName(bJsonOBJ.Getvalue('ObjectType').value ) <> toParam Then
-          Begin
-//           FreeAndNil(bJsonOBJ);
-           Continue;
-          End;
-         JSONParam := TJSONParam.Create(vRSCharset);
-         Try
-          JSONParam.ParamName       := stringreplace(bJsonOBJ.pairs[4].JsonString.tostring, '"', '',[rfReplaceAll, rfIgnoreCase]);
-          JSONParam.ObjectValue     := GetValueType(bJsonOBJ.getvalue('ValueType').value);
-          JSONParam.ObjectDirection := GetDirectionName(bJsonOBJ.getvalue('Direction').value);
-          JSONParam.Encoded         := GetBooleanFromString(bJsonOBJ.GetValue('Encoded').value);
-          If Not(JSONParam.ObjectValue In [ovBlob, ovGraphic, ovOraBlob, ovOraClob]) Then
-           Begin
-            If (JSONParam.Encoded) Then
-             vValue := DecodeStrings(stringreplace(bJsonOBJ.pairs[4].JsonValue.Value, '"', '',[rfReplaceAll, rfIgnoreCase]) )
-            Else If JSONParam.ObjectValue <> ovObject then
-             vValue := bJsonOBJ.pairs[4].JsonValue.Value
-            Else                                            //TODO Brito
+           bJsonOBJ :=  bJsonOBJTemp.get(A) as TJSONObject;
+           If bJsonOBJ.count = 0 Then
+            Begin
+    //           FreeAndNil(bJsonOBJ);
+             Continue;
+            End;
+           If GetObjectName(bJsonOBJ.Getvalue('ObjectType').value ) <> toParam Then
+            Begin
+    //           FreeAndNil(bJsonOBJ);
+             Continue;
+            End;
+           JSONParam := TJSONParam.Create(vRSCharset);
+           Try
+            JSONParam.ParamName       := stringreplace(bJsonOBJ.pairs[4].JsonString.tostring, '"', '',[rfReplaceAll, rfIgnoreCase]);
+            JSONParam.ObjectValue     := GetValueType(bJsonOBJ.getvalue('ValueType').value);
+            JSONParam.ObjectDirection := GetDirectionName(bJsonOBJ.getvalue('Direction').value);
+            JSONParam.Encoded         := GetBooleanFromString(bJsonOBJ.GetValue('Encoded').value);
+            If Not(JSONParam.ObjectValue In [ovBlob, ovGraphic, ovOraBlob, ovOraClob]) Then
+             Begin
+              If (JSONParam.Encoded) Then
+               vValue := DecodeStrings(stringreplace(bJsonOBJ.pairs[4].JsonValue.Value, '"', '',[rfReplaceAll, rfIgnoreCase]) )
+              Else If JSONParam.ObjectValue <> ovObject then
+               vValue := bJsonOBJ.pairs[4].JsonValue.Value
+              Else                                            //TODO Brito
+               Begin
+                vValue := bJsonOBJ.pairs[4].JsonValue.Value;
+                DeleteInvalidChar(vValue);
+               End;
+             End
+            Else
              Begin
               vValue := bJsonOBJ.pairs[4].JsonValue.Value;
-              DeleteInvalidChar(vValue);
+              If Trim(vValue) = '' Then
+               vValue := bJsonOBJ.pairs[4].JsonValue.ToJson;
              End;
-           End
-          Else
-           Begin
-            vValue := bJsonOBJ.pairs[4].JsonValue.Value;
-            If Trim(vValue) = '' Then
-             vValue := bJsonOBJ.pairs[4].JsonValue.ToJson;
-           End;
-//          If JSONParam.Encoded Then
-//           vValue := DecodeStrings(stringreplace(bJsonOBJ.pairs[4].JsonValue.tostring, '"', '',[rfReplaceAll, rfIgnoreCase]) )
-//          Else
-//           vValue := bJsonOBJ.pairs[4].JsonValue.tostring;
-          If Trim(vValue) <> '' Then
-           Begin
-            If (vValue[InitStrPos] = '"')      And
-               (vValue[Length(vValue) - FinalStrPos] = '"') Then
+    //          If JSONParam.Encoded Then
+    //           vValue := DecodeStrings(stringreplace(bJsonOBJ.pairs[4].JsonValue.tostring, '"', '',[rfReplaceAll, rfIgnoreCase]) )
+    //          Else
+    //           vValue := bJsonOBJ.pairs[4].JsonValue.tostring;
+            If Trim(vValue) <> '' Then
              Begin
-              Delete(vValue, InitStrPos+FinalStrPos, 1);
-              Delete(vValue, Length(vValue), 1);
+              If (vValue[InitStrPos] = '"')      And
+                 (vValue[Length(vValue) - FinalStrPos] = '"') Then
+               Begin
+                Delete(vValue, InitStrPos+FinalStrPos, 1);
+                Delete(vValue, Length(vValue), 1);
+               End;
              End;
+    //         //  vValue:=stringreplace(vValue, '"', '',[rfReplaceAll, rfIgnoreCase]);
+    //          //bJsonOBJ.clean;
+    //          FreeAndNil(bJsonOBJ);
+    //          //parametro criandos no servidor
+            If ParamsData.ItemsString[JSONParam.ParamName] = Nil Then
+             Begin
+              JSONParamNew           := TJSONParam.Create(ParamsData.Encoding);
+              JSONParamNew.ParamName := JSONParam.ParamName;
+              JSONParamNew.SetValue(vValue, JSONParam.Encoded);
+              ParamsData.Add(JSONParamNew);
+             End
+            Else If Not (JSONParam.Binary) Then
+             ParamsData.ItemsString[JSONParam.ParamName].SetValue(vValue, JSONParam.Encoded)
+            Else
+             ParamsData.ItemsString[JSONParam.ParamName].SetValue(vValue,
+                                                                  (JSONParam.Encoded And
+                                                                   Not(JSONParam.ObjectValue In [ovBlob, ovGraphic, ovOraBlob, ovOraClob])));
+           Finally
+            vValue := '';
+            FreeAndNil(JSONParam);
+    //          If Assigned(bJsonOBJ) Then
+    //           Begin
+    //            //bJsonOBJ.clean;
+    //            FreeAndNil(bJsonOBJ);
+    //           End;
            End;
-//         //  vValue:=stringreplace(vValue, '"', '',[rfReplaceAll, rfIgnoreCase]);
-//          //bJsonOBJ.clean;
-//          FreeAndNil(bJsonOBJ);
-//          //parametro criandos no servidor
-          If ParamsData.ItemsString[JSONParam.ParamName] = Nil Then
-           Begin
-            JSONParamNew           := TJSONParam.Create(ParamsData.Encoding);
-            JSONParamNew.ParamName := JSONParam.ParamName;
-            JSONParamNew.SetValue(vValue, JSONParam.Encoded);
-            ParamsData.Add(JSONParamNew);
-           End
-          Else If Not (JSONParam.Binary) Then
-           ParamsData.ItemsString[JSONParam.ParamName].SetValue(vValue, JSONParam.Encoded)
-          Else
-           ParamsData.ItemsString[JSONParam.ParamName].SetValue(vValue,
-                                                                (JSONParam.Encoded And
-                                                                 Not(JSONParam.ObjectValue In [ovBlob, ovGraphic, ovOraBlob, ovOraClob])));
-         Finally
-          vValue := '';
-          FreeAndNil(JSONParam);
-//          If Assigned(bJsonOBJ) Then
-//           Begin
-//            //bJsonOBJ.clean;
-//            FreeAndNil(bJsonOBJ);
-//           End;
-         End;
+          End;
         End;
+    //     If Assigned(bJsonOBJ) Then
+    //      Begin
+         //bJsonOBJ.clean;
+    //       FreeAndNil(bJsonOBJ);
+    //      End;
+    //    bJsonValue.Free;
+    //    if bJsonOBJTemp <> Nil then
+    //     FreeAndNil(bJsonOBJTemp);
+      if Assigned(bJsonValue) then
+       FreeAndNil(bJsonValue);
       End;
-//     If Assigned(bJsonOBJ) Then
-//      Begin
-       //bJsonOBJ.clean;
-//       FreeAndNil(bJsonOBJ);
-//      End;
-//    bJsonValue.Free;
-//    if bJsonOBJTemp <> Nil then
-//     FreeAndNil(bJsonOBJTemp);
-    if Assigned(bJsonValue) then
-     FreeAndNil(bJsonValue);
     End;
   Finally
    If vTempValue <> '' Then
@@ -2179,7 +2196,8 @@ End;
 Function TRESTClientPooler.SendEvent(EventData  : String;
                                      Var Params : TDWParams;
                                      EventType  : TSendEvent = sePOST;
-                            		     CallBack   : TCallBack  = Nil) : String;
+                            		     CallBack   : TCallBack  = Nil;
+                                     JsonMode   : TJsonMode  = jmDataware) : String;
 Var
  vURL,
  vTpRequest,
@@ -2225,87 +2243,101 @@ Var
     aValue    := Copy(aValue, 1, Pos(']}', aValue) -1);                                 //TODO Brito
    vTempValue := aValue;
    InputValue := Copy(InputValue, 1, InitPos -1) + ']}'; //Delete(InputValue, InitPos, Pos(']}', InputValue) - InitPos);
-   If (Params <> Nil) And (InputValue <> '{"PARAMS"]}') Then
+   If JsonMode = jmPureJSON Then
     Begin
-     {$IFNDEF FPC}
-     {$IF CompilerVersion < 21}
-     If vRSCharset = esUtf8 Then
-      bJsonValue    := TJsonObject.Create(UTF8Decode(InputValue))
-     Else
-      bJsonValue    := TJsonObject.Create(InputValue);
-     {$ELSE}
-      bJsonValue    := TJsonObject.Create(InputValue);
-     {$IFEND}
-     {$ENDIF}
-     InputValue    := '';
-     bJsonOBJTemp  := bJsonValue.getJSONArray(bJsonValue.names.get(0).ToString); //TJSONArray.Create(bJsonValue.opt(bJsonValue.names.get(0).ToString).ToString);
-     If bJsonOBJTemp.length > 0 Then
-      Begin
-       For A := 0 To bJsonOBJTemp.length -1 Do
-        Begin
-         bJsonOBJ := bJsonOBJTemp.getJSONObject(A); //TJsonObject.Create(bJsonOBJTemp.get(A).ToString);
-         If Length(bJsonOBJ.opt(bJsonOBJ.names.get(0).ToString).ToString) = 0 Then
-          Begin
-//           FreeAndNil(bJsonOBJ);
-           Continue;
-          End;
-         If GetObjectName(bJsonOBJ.opt(bJsonOBJ.names.get(0).ToString).ToString) <> toParam Then
-          Begin
-//           FreeAndNil(bJsonOBJ);
-           Continue;
-          End;
-         JSONParam := TJSONParam.Create(vRSCharset);
-         Try
-          JSONParam.ParamName       := bJsonOBJ.names.get(4).ToString;
-          JSONParam.ObjectValue     := GetValueType(bJsonOBJ.opt(bJsonOBJ.names.get(3).ToString).ToString);
-          JSONParam.ObjectDirection := GetDirectionName(bJsonOBJ.opt(bJsonOBJ.names.get(1).ToString).ToString);
-          JSONParam.Encoded         := GetBooleanFromString(bJsonOBJ.opt(bJsonOBJ.names.get(2).ToString).ToString);
-          If Not(JSONParam.ObjectValue In [ovBlob, ovGraphic, ovOraBlob, ovOraClob]) Then
-           Begin
-            If (JSONParam.Encoded) Then
-             vValue := DecodeStrings(bJsonOBJ.opt(bJsonOBJ.names.get(4).ToString).ToString)
-            Else If JSONParam.ObjectValue <> ovObject then
-             vValue := bJsonOBJ.opt(bJsonOBJ.names.get(4).ToString).ToString
-            Else                                            //TODO Brito
-             Begin
-              vValue := bJsonOBJ.opt(bJsonOBJ.names.get(4).ToString).ToString;
-              DeleteInvalidChar(vValue);
-             End;
-           End
-          Else
-           vValue := bJsonOBJ.opt(bJsonOBJ.names.get(4).ToString).ToString;
-//          bJsonOBJ.clean;
-//          FreeAndNil(bJsonOBJ);
-          //parametro criandos no servidor
-          If ParamsData.ItemsString[JSONParam.ParamName] = Nil Then
-           Begin
-            JSONParamNew           := TJSONParam.Create(ParamsData.Encoding);
-            JSONParamNew.ParamName := JSONParam.ParamName;
-            JSONParamNew.SetValue(vValue, JSONParam.Encoded);
-            ParamsData.Add(JSONParamNew);
-           End
-          Else If Not (JSONParam.Binary) Then
-           ParamsData.ItemsString[JSONParam.ParamName].SetValue(vValue, JSONParam.Encoded)
-          Else
-           ParamsData.ItemsString[JSONParam.ParamName].SetValue(vValue,
-                                                                (JSONParam.Encoded And
-                                                                 Not(JSONParam.ObjectValue In [ovBlob, ovGraphic, ovOraBlob, ovOraClob])));
-         Finally
-          vValue := '';
-          FreeAndNil(JSONParam);
 {
-          If Assigned(bJsonOBJ) Then
-           Begin
-            bJsonOBJ.clean;
-            FreeAndNil(bJsonOBJ);
-           End;
+   If InputValue <> '' Then
+    Begin
+//     If InputValue[InitStrPos] <> InputValue[Length(InputValue) - FinalStrPos] Then
+     If InputValue[Length(InputValue) - FinalStrPos] <> ']' Then
+      InputValue := InputValue + ']';
+    End;
 }
-         End;
+    End
+   Else
+    Begin
+     If (Params <> Nil) And (InputValue <> '{"PARAMS"]}') And (InputValue <> '') Then
+      Begin
+       {$IFNDEF FPC}
+       {$IF CompilerVersion < 21}
+       If vRSCharset = esUtf8 Then
+        bJsonValue    := TJsonObject.Create(UTF8Decode(InputValue))
+       Else
+        bJsonValue    := TJsonObject.Create(InputValue);
+       {$ELSE}
+        bJsonValue    := TJsonObject.Create(InputValue);
+       {$IFEND}
+       {$ENDIF}
+       InputValue    := '';
+       bJsonOBJTemp  := bJsonValue.getJSONArray(bJsonValue.names.get(0).ToString); //TJSONArray.Create(bJsonValue.opt(bJsonValue.names.get(0).ToString).ToString);
+       If bJsonOBJTemp.length > 0 Then
+        Begin
+         For A := 0 To bJsonOBJTemp.length -1 Do
+          Begin
+           bJsonOBJ := bJsonOBJTemp.getJSONObject(A); //TJsonObject.Create(bJsonOBJTemp.get(A).ToString);
+           If Length(bJsonOBJ.opt(bJsonOBJ.names.get(0).ToString).ToString) = 0 Then
+            Begin
+  //           FreeAndNil(bJsonOBJ);
+             Continue;
+            End;
+           If GetObjectName(bJsonOBJ.opt(bJsonOBJ.names.get(0).ToString).ToString) <> toParam Then
+            Begin
+  //           FreeAndNil(bJsonOBJ);
+             Continue;
+            End;
+           JSONParam := TJSONParam.Create(vRSCharset);
+           Try
+            JSONParam.ParamName       := bJsonOBJ.names.get(4).ToString;
+            JSONParam.ObjectValue     := GetValueType(bJsonOBJ.opt(bJsonOBJ.names.get(3).ToString).ToString);
+            JSONParam.ObjectDirection := GetDirectionName(bJsonOBJ.opt(bJsonOBJ.names.get(1).ToString).ToString);
+            JSONParam.Encoded         := GetBooleanFromString(bJsonOBJ.opt(bJsonOBJ.names.get(2).ToString).ToString);
+            If Not(JSONParam.ObjectValue In [ovBlob, ovGraphic, ovOraBlob, ovOraClob]) Then
+             Begin
+              If (JSONParam.Encoded) Then
+               vValue := DecodeStrings(bJsonOBJ.opt(bJsonOBJ.names.get(4).ToString).ToString)
+              Else If JSONParam.ObjectValue <> ovObject then
+               vValue := bJsonOBJ.opt(bJsonOBJ.names.get(4).ToString).ToString
+              Else                                            //TODO Brito
+               Begin
+                vValue := bJsonOBJ.opt(bJsonOBJ.names.get(4).ToString).ToString;
+                DeleteInvalidChar(vValue);
+               End;
+             End
+            Else
+             vValue := bJsonOBJ.opt(bJsonOBJ.names.get(4).ToString).ToString;
+  //          bJsonOBJ.clean;
+  //          FreeAndNil(bJsonOBJ);
+            //parametro criandos no servidor
+            If ParamsData.ItemsString[JSONParam.ParamName] = Nil Then
+             Begin
+              JSONParamNew           := TJSONParam.Create(ParamsData.Encoding);
+              JSONParamNew.ParamName := JSONParam.ParamName;
+              JSONParamNew.SetValue(vValue, JSONParam.Encoded);
+              ParamsData.Add(JSONParamNew);
+             End
+            Else If Not (JSONParam.Binary) Then
+             ParamsData.ItemsString[JSONParam.ParamName].SetValue(vValue, JSONParam.Encoded)
+            Else
+             ParamsData.ItemsString[JSONParam.ParamName].SetValue(vValue,
+                                                                  (JSONParam.Encoded And
+                                                                   Not(JSONParam.ObjectValue In [ovBlob, ovGraphic, ovOraBlob, ovOraClob])));
+           Finally
+            vValue := '';
+            FreeAndNil(JSONParam);
+  {
+            If Assigned(bJsonOBJ) Then
+             Begin
+              bJsonOBJ.clean;
+              FreeAndNil(bJsonOBJ);
+             End;
+  }
+           End;
+          End;
         End;
+       bJsonValue.Clean;
+       FreeAndNil(bJsonValue);
+  //     FreeAndNil(bJsonOBJTemp);
       End;
-     bJsonValue.Clean;
-     FreeAndNil(bJsonValue);
-//     FreeAndNil(bJsonOBJTemp);
     End;
   Finally
    If vTempValue <> '' Then
@@ -2571,7 +2603,8 @@ End;
 Function TRESTClientPooler.SendEvent(EventData  : String;
                                      Var Params : TDWParams;
                                      EventType  : TSendEvent = sePOST;
-                            	       CallBack   : TCallBack  = Nil) : String; //Código original VCL e LCL
+                            	       CallBack   : TCallBack  = Nil;
+                                     JsonMode   : TJsonMode  = jmDataware) : String; //Código original VCL e LCL
 Var
  vURL,
  vTpRequest    : String;
@@ -2620,77 +2653,101 @@ Var
    {$ELSE}
    InputValue := Copy(InputValue, 1, InitPos -1) + ']}'; //Delete(InputValue, InitPos, Pos(']}', InputValue) - InitPos);
    {$ENDIF}
-   If (Params <> Nil) And (InputValue <> '{"PARAMS"]}') Then
+   If JsonMode = jmPureJSON Then
     Begin
-//     bJsonValue    := TJsonObject.Create({$IFDEF FPC}GetStringEncode({$ENDIF}InputValue{$IFDEF FPC}, vDatabaseCharSet){$ENDIF});
-     {$IFDEF FPC}
-      If vRSCharset = esUtf8 Then
-       bJsonValue    := TJsonObject.Create(PWidechar(UTF8Decode(InputValue)))
-      Else
-       bJsonValue    := TJsonObject.Create(InputValue);
-     {$ELSE}
-      bJsonValue    := TJsonObject.Create(InputValue);
-     {$ENDIF}
-     InputValue    := '';
-     bJsonOBJTemp  := bJsonValue.getJSONArray(bJsonValue.names.get(0).ToString); //TJSONArray.Create(bJsonValue.opt(bJsonValue.names.get(0).ToString).ToString);
-     If bJsonOBJTemp.length > 0 Then
-      Begin
-       For A := 0 To bJsonOBJTemp.length -1 Do
-        Begin
-         bJsonOBJ := bJsonOBJTemp.getJSONObject(A); //TJsonObject.Create(bJsonOBJTemp.get(A).ToString);
-//         bJsonOBJ := TJsonObject.Create(bJsonOBJTemp.get(A).ToString);
-         If Length(bJsonOBJ.opt(bJsonOBJ.names.get(0).ToString).ToString) = 0 Then
-          Begin
-//           FreeAndNil(bJsonOBJ);
-           Continue;
-          End;
-         If GetObjectName(bJsonOBJ.opt(bJsonOBJ.names.get(0).ToString).ToString) <> toParam Then
-          Begin
-//           FreeAndNil(bJsonOBJ);
-           Continue;
-          End;
-         JSONParam := TJSONParam.Create(vRSCharset);
-         Try
-          JSONParam.ParamName       := bJsonOBJ.names.get(4).ToString;
-          JSONParam.ObjectValue     := GetValueType(bJsonOBJ.opt(bJsonOBJ.names.get(3).ToString).ToString);
-          JSONParam.ObjectDirection := GetDirectionName(bJsonOBJ.opt(bJsonOBJ.names.get(1).ToString).ToString);
-          JSONParam.Encoded         := GetBooleanFromString(bJsonOBJ.opt(bJsonOBJ.names.get(2).ToString).ToString);
-          If JSONParam.Encoded Then
-           vValue := DecodeStrings(bJsonOBJ.opt(bJsonOBJ.names.get(4).ToString).ToString{$IFDEF FPC}, vDatabaseCharSet{$ENDIF})
-          Else
-           vValue := bJsonOBJ.opt(bJsonOBJ.names.get(4).ToString).ToString;
-          JSONParam.SetValue(vValue, JSONParam.Encoded);
 {
-          bJsonOBJ.clean;
-          FreeAndNil(bJsonOBJ);
+   If InputValue <> '' Then
+    Begin
+//     If InputValue[InitStrPos] <> InputValue[Length(InputValue) - FinalStrPos] Then
+     If InputValue[Length(InputValue) - FinalStrPos] <> ']' Then
+      InputValue := InputValue + ']';
+    End;
 }
-          //parametro criandos no servidor
-          If ParamsData.ItemsString[JSONParam.ParamName] = Nil Then
-           Begin
-            JSONParamNew           := TJSONParam.Create(ParamsData.Encoding);
-            JSONParamNew.ParamName := JSONParam.ParamName;
-            JSONParamNew.SetValue(JSONParam.Value, JSONParam.Encoded);
-            ParamsData.Add(JSONParamNew);
-           End
-          Else If Not (JSONParam.Binary) Then
-           ParamsData.ItemsString[JSONParam.ParamName].Value := JSONParam.Value //, JSONParam.Encoded);
-          Else
-           ParamsData.ItemsString[JSONParam.ParamName].SetValue(vValue, JSONParam.Encoded);
-         Finally
-          FreeAndNil(JSONParam);
-{
-          If Assigned(bJsonOBJ) Then
-           Begin
+    End
+   Else
+    Begin
+     If (Params <> Nil) And (InputValue <> '{"PARAMS"]}') And (InputValue <> '') Then
+      Begin
+  //     bJsonValue    := TJsonObject.Create({$IFDEF FPC}GetStringEncode({$ENDIF}InputValue{$IFDEF FPC}, vDatabaseCharSet){$ENDIF});
+       {$IFDEF FPC}
+        If vRSCharset = esUtf8 Then
+         bJsonValue    := TJsonObject.Create(PWidechar(UTF8Decode(InputValue)))
+        Else
+         bJsonValue    := TJsonObject.Create(InputValue);
+       {$ELSE}
+        bJsonValue    := TJsonObject.Create(InputValue);
+       {$ENDIF}
+       InputValue    := '';
+       bJsonOBJTemp  := bJsonValue.getJSONArray(bJsonValue.names.get(0).ToString); //TJSONArray.Create(bJsonValue.opt(bJsonValue.names.get(0).ToString).ToString);
+       If bJsonOBJTemp.length > 0 Then
+        Begin
+         For A := 0 To bJsonOBJTemp.length -1 Do
+          Begin
+           bJsonOBJ := bJsonOBJTemp.getJSONObject(A); //TJsonObject.Create(bJsonOBJTemp.get(A).ToString);
+  //         bJsonOBJ := TJsonObject.Create(bJsonOBJTemp.get(A).ToString);
+           If Length(bJsonOBJ.opt(bJsonOBJ.names.get(0).ToString).ToString) = 0 Then
+            Begin
+  //           FreeAndNil(bJsonOBJ);
+             Continue;
+            End;
+           If GetObjectName(bJsonOBJ.opt(bJsonOBJ.names.get(0).ToString).ToString) <> toParam Then
+            Begin
+  //           FreeAndNil(bJsonOBJ);
+             Continue;
+            End;
+           JSONParam := TJSONParam.Create(vRSCharset);
+           Try
+            JSONParam.ParamName       := bJsonOBJ.names.get(4).ToString;
+            JSONParam.ObjectValue     := GetValueType(bJsonOBJ.opt(bJsonOBJ.names.get(3).ToString).ToString);
+            JSONParam.ObjectDirection := GetDirectionName(bJsonOBJ.opt(bJsonOBJ.names.get(1).ToString).ToString);
+            JSONParam.Encoded         := GetBooleanFromString(bJsonOBJ.opt(bJsonOBJ.names.get(2).ToString).ToString);
+            If Not(JSONParam.ObjectValue In [ovBlob, ovGraphic, ovOraBlob, ovOraClob]) Then
+             Begin
+              If (JSONParam.Encoded) Then
+               vValue := DecodeStrings(bJsonOBJ.opt(bJsonOBJ.names.get(4).ToString).ToString{$IFDEF FPC}, vDatabaseCharSet{$ENDIF})
+              Else If JSONParam.ObjectValue <> ovObject then
+               vValue := bJsonOBJ.opt(bJsonOBJ.names.get(4).ToString).ToString
+              Else                                            //TODO Brito
+               Begin
+                vValue := bJsonOBJ.opt(bJsonOBJ.names.get(4).ToString).ToString;
+                DeleteInvalidChar(vValue);
+               End;
+             End
+            Else
+             vValue := bJsonOBJ.opt(bJsonOBJ.names.get(4).ToString).ToString;
+            JSONParam.SetValue(vValue, JSONParam.Encoded);
+  {
             bJsonOBJ.clean;
             FreeAndNil(bJsonOBJ);
+  }
+            //parametro criandos no servidor
+            If ParamsData.ItemsString[JSONParam.ParamName] = Nil Then
+             Begin
+              JSONParamNew           := TJSONParam.Create(ParamsData.Encoding);
+              JSONParamNew.ParamName := JSONParam.ParamName;
+              JSONParamNew.SetValue(JSONParam.Value, JSONParam.Encoded);
+              ParamsData.Add(JSONParamNew);
+             End
+            Else If Not (JSONParam.Binary) Then
+             ParamsData.ItemsString[JSONParam.ParamName].Value := JSONParam.Value //, JSONParam.Encoded);
+            Else
+             ParamsData.ItemsString[JSONParam.ParamName].SetValue(vValue, JSONParam.Encoded);
+           Finally
+            FreeAndNil(JSONParam);
+  {
+            If Assigned(bJsonOBJ) Then
+             Begin
+              bJsonOBJ.clean;
+              FreeAndNil(bJsonOBJ);
+             End;
+  }
            End;
-}
-         End;
+          End;
         End;
+       bJsonValue.Clean;
+       FreeAndNil(bJsonValue);
+  //     FreeAndNil(bJsonOBJTemp);
       End;
-     bJsonValue.Clean;
-     FreeAndNil(bJsonValue);
-//     FreeAndNil(bJsonOBJTemp);
     End;
   Finally
    If vTempValue <> '' Then

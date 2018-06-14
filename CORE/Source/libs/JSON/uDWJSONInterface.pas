@@ -93,6 +93,8 @@ End;
 
 implementation
 
+Uses uDWConsts;
+
 Function removestr(Astr: string; Asubstr: string):string;
 Begin
  result:= stringreplace(Astr,Asubstr,'',[rfReplaceAll, rfIgnoreCase]);
@@ -286,19 +288,19 @@ Begin
   Begin
    {$IFNDEF FPC}
     {$IF Defined(HAS_FMX)}
-     If JSONValue[1] = '[' then
+     If JSONValue[InitStrPos] = '[' then
       vJSONObject := TJSONBaseClass(TJSONObject.ParseJSONValue(JSONValue) as TJsonArray)
      Else
       vJSONObject := TJSONBaseClass(TJSONObject.ParseJSONValue(JSONValue) as TJsonObject);
     {$ELSE}
-     If JSONValue[1] = '[' then
+     If JSONValue[InitStrPos] = '[' then
       vJSONObject := TJSONBaseClass(TJSONArray.Create(JSONValue))
      Else
       vJSONObject := TJSONBaseClass(TJSONObject.Create(JSONValue));
     {$IFEND}
    {$ELSE}
     JSONData := GetJSON(JSONValue);
-    If JSONValue[1] = '[' then
+    If JSONValue[InitStrPos] = '[' then
      vJSONObject := TJSONBaseClass(TJSONArray(JSONData))
     Else
      vJSONObject := TJSONBaseClass(TJSONObject(JSONData));

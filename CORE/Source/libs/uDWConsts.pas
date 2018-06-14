@@ -22,14 +22,19 @@ Uses
 
 
 Const
-{$IFDEF POSIX}
+ {$IFNDEF FPC}
   {$IF Defined(HAS_FMX)} //Alteardo para IOS Brito
-   InitStrPos            = 0;
-   FinalStrPos           = 1;
-   {$ELSE}
+    {$IFDEF MACOS}       // Alteracao feito por ICO para MACOSX
+     InitStrPos         = 1;
+     FinalStrPos        = 0;
+    {$ELSE}
+     InitStrPos            = 0;
+     FinalStrPos           = 1;
+    {$ENDIF}
+  {$ELSE}
    InitStrPos            = 1;
    FinalStrPos           = 0;
-   {$IFEND}
+  {$IFEND}
  {$ELSE}
  InitStrPos            = 1;
  FinalStrPos           = 0;
@@ -73,7 +78,7 @@ Const
                         'Components REST DataWare Core' + #13#10 +
                         'CORE Version';
  DWSobreLicencaStatus = 'Open Source - Free Version';
- DWRelease            = '1440';
+ DWRelease            = '1448';
  DWVERSAO             = '1.3.1.' + DWRelease;
 
 Type

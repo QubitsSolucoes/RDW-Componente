@@ -547,19 +547,20 @@ Begin
     Begin
      vFound  := DWParams.ItemsString[vEventList.EventByName[EventName].vDWParams.Items[I].ParamName] <> Nil;
      If Not(vFound) Then
-      dwParam                := TJSONParam.Create(DWParams.Encoding)
-     Else
-      dwParam                := DWParams.ItemsString[vEventList.EventByName[EventName].vDWParams.Items[I].ParamName];
-     dwParam.ParamName       := vEventList.EventByName[EventName].vDWParams.Items[I].ParamName;
-     dwParam.ObjectDirection := vEventList.EventByName[EventName].vDWParams.Items[I].ObjectDirection;
-     dwParam.ObjectValue     := vEventList.EventByName[EventName].vDWParams.Items[I].ObjectValue;
-     dwParam.Encoded         := vEventList.EventByName[EventName].vDWParams.Items[I].Encoded;
-     dwParam.JsonMode        := DWParams.JsonMode;
-     If (vEventList.EventByName[EventName].vDWParams.Items[I].DefaultValue <> '')  And
-        (Trim(dwParam.AsString) = '') Then
-      dwParam.Value           := vEventList.EventByName[EventName].vDWParams.Items[I].DefaultValue;
-     If Not(vFound) Then
-      DWParams.Add(dwParam);
+      Begin
+       dwParam                := TJSONParam.Create(DWParams.Encoding);
+//     Else
+//      dwParam                := DWParams.ItemsString[vEventList.EventByName[EventName].vDWParams.Items[I].ParamName];
+       dwParam.ParamName       := vEventList.EventByName[EventName].vDWParams.Items[I].ParamName;
+       dwParam.ObjectDirection := vEventList.EventByName[EventName].vDWParams.Items[I].ObjectDirection;
+       dwParam.ObjectValue     := vEventList.EventByName[EventName].vDWParams.Items[I].ObjectValue;
+       dwParam.Encoded         := vEventList.EventByName[EventName].vDWParams.Items[I].Encoded;
+       dwParam.JsonMode        := DWParams.JsonMode;
+       If (vEventList.EventByName[EventName].vDWParams.Items[I].DefaultValue <> '')  And
+          (Trim(dwParam.AsString) = '') Then
+        dwParam.Value           := vEventList.EventByName[EventName].vDWParams.Items[I].DefaultValue;
+       DWParams.Add(dwParam);
+      End;
     End;
   End
  Else
@@ -800,9 +801,14 @@ end;
 
 Function TDWClientEvents.SendEvent(EventName: String; Var DWParams: TDWParams;
                                    Var Error: String; Var NativeResult : String): Boolean;
+Var
+ vJsonMode : TJsonMode;
 Begin
  If vRESTClientPooler <> Nil Then
-  NativeResult := vRESTClientPooler.SendEvent(EventName, DWParams);
+  Begin
+   vJsonMode    := vEventList.EventByName[EventName].vJsonMode;
+   NativeResult := vRESTClientPooler.SendEvent(EventName, DWParams, sePOST, Nil, vJsonMode);
+  End;
 End;
 
 Function TDWClientEvents.SendEvent(EventName: String; Var DWParams: TDWParams;

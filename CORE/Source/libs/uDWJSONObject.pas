@@ -12,13 +12,15 @@ Uses
   {$ELSE}
    {$IF CompilerVersion > 21} // Delphi 2010 pra cima
     System.SysUtils, System.Classes, uDWJSONTools, uDWConsts, uDWJSON,
-    uDWConstsData, IdGlobal, System.Rtti, Data.DB, Soap.EncdDecd,
-    Datasnap.DbClient
+    uDWConstsData, IdGlobal, System.Rtti, Data.DB, Soap.EncdDecd
     {$IF Defined(HAS_FMX)} // Alteardo para IOS Brito
      , System.json, FMX.Types
     {$IFEND}
     {$IFDEF RESJEDI}
     , JvMemoryDataset
+    {$ENDIF}
+    {$IFDEF CLIENTDATASET}
+    , Datasnap.DbClient
     {$ENDIF}
     {$IFDEF RESTKBMMEMTABLE}
     , kbmmemtable
@@ -182,6 +184,7 @@ Type
   Procedure SetObjectDirection(Value   : TObjectDirection);
   Function  GetByteString : String;
   Procedure SetAsObject   (Value       : String);
+  Procedure SetEncoded    (Value       : Boolean);
  Public
   Constructor Create      (Encoding    : TEncodeSelect);
   Destructor  Destroy; Override;
@@ -206,7 +209,7 @@ Type
   Property ObjectDirection    : TObjectDirection Read vObjectDirection    Write SetObjectDirection;
   Property ObjectValue        : TObjectValue     Read vObjectValue        Write SetObjectValue;
   Property ParamName          : String           Read vParamName          Write SetParamName;
-  Property Encoded            : Boolean          Read vEncoded            Write vEncoded;
+  Property Encoded            : Boolean          Read vEncoded            Write SetEncoded;
   Property Binary             : Boolean          Read vBinary;
   Property JsonMode           : TJsonMode        Read vJsonMode           Write vJsonMode;
   Property FloatDecimalFormat : String           Read vFloatDecimalFormat Write vFloatDecimalFormat;
@@ -3236,6 +3239,12 @@ Begin
  End;
 End;
 
+Procedure TJSONParam.SetEncoded(Value: Boolean);
+Begin
+ vEncoded := Value;
+ vJSONValue.Encoded := vEncoded;
+End;
+
 procedure TJSONParam.SetObjectDirection(Value: TObjectDirection);
 begin
  vObjectDirection := Value;
@@ -3278,6 +3287,7 @@ Begin
  vJSONValue.JsonMode := vJsonMode;
  vJSONValue.vEncoded := vEncoded;
  vBinary := vObjectValue in [ovBlob, ovGraphic, ovOraBlob, ovOraClob];
+ vJSONValue.ObjectValue := vObjectValue;
  If (Encode) And Not(vBinary) Then
   WriteValue(EncodeStrings(aValue{$IFDEF FPC}, csUndefined{$ENDIF}))
  Else
@@ -3287,6 +3297,7 @@ End;
 
 Function TJSONParam.ToJSON: String;
 Begin
+ vJSONValue.Encoded    := vEncoded;
  vJSONValue.JsonMode   := vJsonMode;
  vJSONValue.TypeObject := vTypeObject;
  vJSONValue.vtagName   := vParamName;

@@ -1815,6 +1815,7 @@ Begin
     Finally
      vTempJSON.Free;
     End;
+    FreeAndNil(bJsonArray);
    End;
  Except
   On E : Exception do
@@ -1839,8 +1840,6 @@ Begin
  End;
  vTempQuery.Close;
  vTempQuery.Free;
- If bJsonArray <> Nil Then
-  FreeAndNil(bJsonArray);
  If bJsonValue <> Nil Then
   FreeAndNil(bJsonValue);
 End;

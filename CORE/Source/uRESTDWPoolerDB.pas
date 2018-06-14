@@ -3243,8 +3243,14 @@ Begin
     LDataSetList.Encoded  := False;
     If Assigned(vDWResponseTranslator.ClientREST) Then
      LDataSetList.Encoding := vDWResponseTranslator.ClientREST.RequestCharset;
-    vValue := vDWResponseTranslator.Open(vDWResponseTranslator.RequestOpen,
+    Try
+     vValue := vDWResponseTranslator.Open(vDWResponseTranslator.RequestOpen,
                                          vDWResponseTranslator.RequestOpenUrl);
+    Except
+     Self.Close;
+    End;
+    If vValue = '[]' Then
+     vValue := '';
     {$IFDEF FPC}
      vValue := StringReplace(vValue, #10, '', [rfReplaceAll]);
     {$ELSE}
