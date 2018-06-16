@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html lang="pt" ng-app="AppPessoas">
+<html lang="pt" ng-app="GetEmployee">
 <head>
 	<meta http-equiv="Content-Type" content="text/html; charset=UTF-8">
 	<meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
@@ -15,8 +15,8 @@
 	<script type="text/javascript" src="js/angular.min.js"></script>
 
 	<script type="text/javascript">
-	angular.module("AppPessoas",[]);
-	angular.module("AppPessoas",[]).controller("AppPessoasCtrl", function ($scope, $http) {
+	angular.module("GetEmployee",[]);
+	angular.module("GetEmployee",[]).controller("GetEmployeeCtrl", function ($scope, $http) {
 		var carregapessoas = function(){
 			$http({
 				method: "GET",
@@ -68,7 +68,7 @@
 				</div>
 			</nav>
 
-			<main role="main" class="col-md-9 ml-sm-auto col-lg-10 pt-3 px-4" ng-controller="AppPessoasCtrl">
+			<main role="main" class="col-md-9 ml-sm-auto col-lg-10 pt-3 px-4" ng-controller="GetEmployeeCtrl">
 				<div class="d-flex justify-content-between flex-wrap flex-md-nowrap align-pessoas-center pb-2 mb-3 border-bottom">
 					<h5 class="">Listagem de Trabalhadores</h5>
 				</div>
@@ -104,6 +104,7 @@
 				</main>
 			</div>
 		</div>
+		
 		<script src="js/feather.min.js"></script>
 		<script>
 			feather.replace()

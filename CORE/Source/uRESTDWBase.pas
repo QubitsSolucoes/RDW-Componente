@@ -76,8 +76,8 @@ Type
  TCallSendEvent = Function (EventData  : String;
                             Var Params : TDWParams;
                             EventType  : TSendEvent = sePOST;
-                            CallBack   : TCallBack  = Nil;
-                            JsonMode   : TJsonMode  = jmDataware) : String Of Object;
+                            JsonMode   : TJsonMode  = jmDataware;
+                            CallBack   : TCallBack  = Nil) : String Of Object;
 
 Type
  TServerMethodClass = Class(TComponent)
@@ -85,6 +85,7 @@ End;
 
 Type
  TThread_Request = class(TThread)
+ Private
   FHttpRequest      : TIdHTTP;
   vUserName,
   vPassword,
@@ -102,7 +103,6 @@ Type
   EventType         : TSendEvent;
   FCallBack         : TCallBack;
   FCallSendEvent    : TCallSendEvent;
- Private
   Procedure SetParams(HttpRequest : TIdHTTP);
   Function  GetHttpRequest : TIdHTTP;
  Protected
@@ -419,12 +419,12 @@ Type
   //Métodos, Propriedades, Variáveis, Procedures e Funções Publicas
   Procedure   SetAccessTag(Value : String);
   Function    GetAccessTag : String;
-  Function    SendEvent(EventData  : String)           : String;Overload;
+  Function    SendEvent(EventData  : String)                  : String;Overload;
   Function    SendEvent(EventData  : String;
                         Var Params : TDWParams;
                         EventType  : TSendEvent = sePOST;
-                        CallBack   : TCallBack  = Nil;
-                        JsonMode   : TJsonMode  = jmDataware) : String;Overload;
+                        JsonMode   : TJsonMode  = jmDataware;
+                        CallBack   : TCallBack  = Nil) : String;Overload;
   Constructor Create   (AOwner     : TComponent);Override;
   Destructor  Destroy;Override;
  Published
@@ -532,11 +532,21 @@ Begin
  compresseddata     := False;
  encodestrings      := False;
  {$IFNDEF FPC}
-   Cmd := Trim(ARequest.PathInfo);
+  Cmd := Trim(ARequest.PathInfo);
+  {$if CompilerVersion > 21}
    AResponse.CustomHeaders.Add('Access-Control-Allow-Origin=*');
+   AResponse.CustomHeaders.Add('Access-Control-Allow-Methods=GET, POST, PATCH, PUT, DELETE, OPTIONS');
+   AResponse.CustomHeaders.Add('Access-Control-Allow-Headers=Content-Type, Origin, Accept, Authorization, X-CUSTOM-HEADER');
+  {$ELSE}
+   AResponse.CustomHeaders.Add('Access-Control-Allow-Origin=*');
+   AResponse.CustomHeaders.Add'Access-Control-Allow-Methods=GET, POST, PATCH, PUT, DELETE, OPTIONS');
+   AResponse.CustomHeaders.Add('Access-Control-Allow-Headers=Content-Type, Origin, Accept, Authorization, X-CUSTOM-HEADER');
+  {$IFEND}
  {$ELSE}
   Cmd := Trim(ARequest.CommandLine);
   AResponse.CustomHeaders.Add('Access-Control-Allow-Origin=*');
+  AResponse.CustomHeaders.Add('Access-Control-Allow-Methods=GET, POST, PATCH, PUT, DELETE, OPTIONS');
+  AResponse.CustomHeaders.Add('Access-Control-Allow-Headers=Content-Type, Origin, Accept, Authorization, X-CUSTOM-HEADER');
  {$ENDIF}
  sCharSet := '';
  If (UpperCase(Copy (Cmd, 1, 3)) = 'GET')    Then
@@ -609,7 +619,7 @@ Begin
   Cmd := StringReplace(Cmd, lowercase(' HTTP/1.1'), '', [rfReplaceAll]);
   Cmd := StringReplace(Cmd, lowercase(' HTTP/2.0'), '', [rfReplaceAll]);
   Cmd := StringReplace(Cmd, lowercase(' HTTP/2.1'), '', [rfReplaceAll]);
-  If (vServerParams.HasAuthentication) Then
+  If (UpperCase(Copy (Cmd, 1, 7)) <> 'OPTIONS') And (vServerParams.HasAuthentication) Then
    Begin
     If ARequest.Authorization <> '' Then
      Begin
@@ -872,7 +882,7 @@ Begin
              ReturnObject := '%s'
             Else
              ReturnObject := '[%s]';
-            vReplyString                        := Format(ReturnObject, [GetParamsReturn(DWParams)]);
+            vReplyString                        := Format(ReturnObject, [JSONStr]); //GetParamsReturn(DWParams)]);
             If vReplyString = '' Then
              vReplyString                       := JSONStr;
            End;
@@ -1251,7 +1261,7 @@ Begin
              Except
               On E : Exception Do
                Begin
-                vMessageError := Format(TReplyError, [e.Message]);
+                vMessageError := e.Message;
                 vError        := True;
                End;
              End;
@@ -1339,7 +1349,7 @@ Begin
            Except
             On E : Exception Do
              Begin
-              vMessageError := Format(TReplyError, [e.Message]);
+              vMessageError := e.Message;
               vError        := True;
              End;
            End;
@@ -1422,7 +1432,7 @@ Begin
            Except
             On E : Exception Do
              Begin
-              vMessageError := Format(TReplyError, [e.Message]);
+              vMessageError := e.Message;
               vError        := True;
              End;
            End;
@@ -1500,7 +1510,7 @@ Begin
            Except
             On E : Exception Do
              Begin
-              vMessageError := Format(TReplyError, [e.Message]);
+              vMessageError := e.Message;
               vError        := True;
              End;
            End;
@@ -1552,7 +1562,7 @@ Begin
          Except
           On E : Exception Do
            Begin
-            vResult := Format(TReplyError, [e.Message]);
+            vResult := e.Message;
             Result  := True;
            End;
          End;
@@ -1643,7 +1653,7 @@ Begin
            Except
             On E : Exception Do
              Begin
-              vMessageError := Format(TReplyError, [e.Message]);
+              vMessageError := e.Message;
               vError        := True;
              End;
            End;
@@ -1710,7 +1720,7 @@ Begin
            Except
             On E : Exception Do
              Begin
-              vMessageError := Format(TReplyError, [e.Message]);
+              vMessageError := e.Message;
               vError        := True;
              End;
            End;
@@ -1799,8 +1809,8 @@ End;
 Function TRESTClientPooler.SendEvent(EventData  : String;
                                      Var Params : TDWParams;
                                      EventType  : TSendEvent = sePOST;
-                            		     CallBack   : TCallBack  = Nil;
-                                     JsonMode   : TJsonMode  = jmDataware) : String;
+                                     JsonMode   : TJsonMode  = jmDataware;
+                                     CallBack   : TCallBack  = Nil) : String;
 Var
  vURL,
  vTpRequest    : String;
@@ -2196,8 +2206,8 @@ End;
 Function TRESTClientPooler.SendEvent(EventData  : String;
                                      Var Params : TDWParams;
                                      EventType  : TSendEvent = sePOST;
-                            		     CallBack   : TCallBack  = Nil;
-                                     JsonMode   : TJsonMode  = jmDataware) : String;
+                                     JsonMode   : TJsonMode  = jmDataware;
+                                     CallBack   : TCallBack  = Nil) : String;
 Var
  vURL,
  vTpRequest,
@@ -2603,8 +2613,8 @@ End;
 Function TRESTClientPooler.SendEvent(EventData  : String;
                                      Var Params : TDWParams;
                                      EventType  : TSendEvent = sePOST;
-                            	       CallBack   : TCallBack  = Nil;
-                                     JsonMode   : TJsonMode  = jmDataware) : String; //Código original VCL e LCL
+                                     JsonMode   : TJsonMode  = jmDataware;
+                                     CallBack   : TCallBack  = Nil) : String; //Código original VCL e LCL
 Var
  vURL,
  vTpRequest    : String;
@@ -3291,7 +3301,7 @@ Begin
             Except
              On E : Exception Do
               Begin
-               vMessageError := Format(TReplyError, [e.Message]);
+               vMessageError := e.Message;
                vError        := True;
               End;
             End;
@@ -3375,7 +3385,7 @@ Begin
            Except
             On E : Exception Do
              Begin
-              vMessageError := Format(TReplyError, [e.Message]);
+              vMessageError := e.Message;
               vError        := True;
              End;
            End;
@@ -3438,7 +3448,7 @@ Begin
            Except
             On E : Exception Do
              Begin
-              vMessageError := Format(TReplyError, [e.Message]);
+              vMessageError := e.Message;
               vError        := True;
              End;
            End;
@@ -3506,7 +3516,7 @@ Begin
            Except
             On E : Exception Do
              Begin
-              vMessageError := Format(TReplyError, [e.Message]);
+              vMessageError := e.Message;
               vError        := True;
              End;
            End;
@@ -3595,7 +3605,7 @@ Begin
            Except
             On E : Exception Do
              Begin
-              vMessageError := Format(TReplyError, [e.Message]);
+              vMessageError := e.Message;
               vError        := True;
              End;
            End;
@@ -3647,7 +3657,7 @@ Begin
          Except
           On E : Exception Do
            Begin
-            vResult := Format(TReplyError, [e.Message]);
+            vResult := e.Message;
             Result  := True;
            End;
          End;
@@ -3737,7 +3747,7 @@ Begin
            Except
             On E : Exception Do
              Begin
-              vMessageError := Format(TReplyError, [e.Message]);
+              vMessageError := e.Message;
               vError        := True;
              End;
            End;
@@ -4010,12 +4020,27 @@ Begin
  {$IFNDEF FPC}
   {$if CompilerVersion > 21}
    AResponseInfo.CustomHeaders.AddValue('Access-Control-Allow-Origin','*');
+   AResponseInfo.CustomHeaders.AddValue('Access-Control-Allow-Methods','GET, POST, PATCH, PUT, DELETE, OPTIONS');
+   AResponseInfo.CustomHeaders.AddValue('Access-Control-Allow-Headers','Content-Type, Origin, Accept, Authorization, X-CUSTOM-HEADER');
   {$ELSE}
    AResponseInfo.CustomHeaders.Add     ('Access-Control-Allow-Origin=*');
+   AResponseInfo.CustomHeaders.Add     ('Access-Control-Allow-Methods=GET, POST, PATCH, PUT, DELETE, OPTIONS');
+   AResponseInfo.CustomHeaders.Add     ('Access-Control-Allow-Headers=Content-Type, Origin, Accept, Authorization, X-CUSTOM-HEADER');
   {$IFEND}
  {$ELSE}
-  AResponseInfo.CustomHeaders.AddValue ('Access-Control-Allow-Origin','*');
+  AResponseInfo.CustomHeaders.AddValue('Access-Control-Allow-Origin','*');
+  AResponseInfo.CustomHeaders.AddValue('Access-Control-Allow-Methods','GET, POST, PATCH, PUT, DELETE, OPTIONS');
+  AResponseInfo.CustomHeaders.AddValue('Access-Control-Allow-Headers','Content-Type, Origin, Accept, Authorization, X-CUSTOM-HEADER');
  {$ENDIF}
+// {$IFNDEF FPC}
+//  {$if CompilerVersion > 21}
+//   AResponseInfo.CustomHeaders.AddValue('Access-Control-Allow-Origin','*');
+//  {$ELSE}
+//   AResponseInfo.CustomHeaders.Add     ('Access-Control-Allow-Origin=*');
+//  {$IFEND}
+// {$ELSE}
+//  AResponseInfo.CustomHeaders.AddValue ('Access-Control-Allow-Origin','*');
+// {$ENDIF}
  sCharSet := '';
  If (UpperCase(Copy (Cmd, 1, 3)) = 'GET')    Then
   Begin
@@ -4077,7 +4102,7 @@ Begin
   Cmd := StringReplace(Cmd, ' HTTP/1.1', '', [rfReplaceAll]);
   Cmd := StringReplace(Cmd, ' HTTP/2.0', '', [rfReplaceAll]);
   Cmd := StringReplace(Cmd, ' HTTP/2.1', '', [rfReplaceAll]);
-  If (vServerParams.HasAuthentication) Then
+  If (UpperCase(Copy (Cmd, 1, 7)) <> 'OPTIONS') And (vServerParams.HasAuthentication) Then
    Begin
     If Not ((ARequestInfo.AuthUsername = vServerParams.Username)  And
             (ARequestInfo.AuthPassword = vServerParams.Password)) Then
@@ -4350,7 +4375,7 @@ Begin
            ReturnObject := '%s'
           Else
            ReturnObject := '[%s]';
-          vReplyString                        := Format(ReturnObject, [GetParamsReturn(DWParams)]);
+          vReplyString                        := Format(ReturnObject, [JSONStr]); //GetParamsReturn(DWParams)]);
           If vReplyString = '' Then
            vReplyString                       := JSONStr;
          End;
@@ -4872,6 +4897,7 @@ Begin
        FCallSendEvent(EventData  ,
                         Params ,
                        EventType  ,
+                       jmDataware,
                        FCallBack  );
       {$ELSE}
        {$if CompilerVersion > 21}
@@ -4880,12 +4906,14 @@ Begin
                                      FCallSendEvent(EventData  ,
                                                       Params ,
                                                      EventType  ,
+                                                     jmDataware,
                                                      FCallBack  );
                                  End);
        {$ELSE}
                FCallSendEvent(EventData  ,
                         Params ,
                        EventType  ,
+                       jmDataware,
                        FCallBack  );
        {$IFEND}
       {$ENDIF}

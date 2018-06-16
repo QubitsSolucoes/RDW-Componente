@@ -155,10 +155,57 @@ object ServerMethodDM: TServerMethodDM
             ObjectValue = ovString
             ParamName = 'result'
             Encoded = False
+          end
+          item
+            TypeObject = toParam
+            ObjectDirection = odINOUT
+            ObjectValue = ovString
+            ParamName = 'segundoparam'
+            Encoded = True
           end>
         JsonMode = jmDataware
         Name = 'getemployeeDW'
         OnReplyEvent = DWServerEvents1EventsgetemployeeDWReplyEvent
+      end
+      item
+        DWParams = <
+          item
+            TypeObject = toParam
+            ObjectDirection = odIN
+            ObjectValue = ovInteger
+            ParamName = 'mynumber'
+            Encoded = True
+          end
+          item
+            TypeObject = toParam
+            ObjectDirection = odOUT
+            ObjectValue = ovInteger
+            ParamName = 'result'
+            Encoded = True
+          end>
+        JsonMode = jmDataware
+        Name = 'eventint'
+        OnReplyEvent = DWServerEvents1EventseventintReplyEvent
+      end
+      item
+        DWParams = <
+          item
+            TypeObject = toParam
+            ObjectDirection = odIN
+            ObjectValue = ovDateTime
+            ParamName = 'mydatetime'
+            Encoded = True
+          end
+          item
+            TypeObject = toParam
+            ObjectDirection = odOUT
+            ObjectValue = ovDateTime
+            ParamName = 'result'
+            Encoded = True
+          end>
+        JsonMode = jmDataware
+        Name = 'eventdatetime'
+        OnReplyEvent = DWServerEvents1EventseventdatetimeReplyEvent
       end>
     Left = 80
     Top = 103

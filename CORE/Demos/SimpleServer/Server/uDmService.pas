@@ -73,11 +73,15 @@ TYPE
       AccessTag: string; var Accept: Boolean);
     procedure DWServerEvents1EventsgetemployeeDWReplyEvent(
       var Params: TDWParams; var Result: string);
+    procedure DWServerEvents1EventseventintReplyEvent(var Params: TDWParams;
+      var Result: string);
+    procedure DWServerEvents1EventseventdatetimeReplyEvent(
+      var Params: TDWParams; var Result: string);
   PRIVATE
     { Private declarations }
     vIDVenda : Integer;
     function GetGenID(GenName: String): Integer;
-    procedure employeeReplyEvent(var Params: TDWParams; dJsonMode: TJsonMode);
+    procedure employeeReplyEvent(var Params: TDWParams; dJsonMode: TJsonMode; Var Result : String);
   PUBLIC
     { Public declarations }
   END;
@@ -91,7 +95,7 @@ IMPLEMENTATION
 {$R *.dfm}
 
 
-procedure TServerMethodDM.employeeReplyEvent(var Params: TDWParams; dJsonMode : TJsonMode);
+procedure TServerMethodDM.employeeReplyEvent(var Params: TDWParams; dJsonMode : TJsonMode; Var Result : String);
 Var
  JSONValue: TJSONValue;
 begin
@@ -105,7 +109,10 @@ begin
    JSONValue.JsonMode := Params.JsonMode;
    JSONValue.Encoding := Encoding;
    If Params.JsonMode in [jmPureJSON, jmMongoDB] Then
-    JSONValue.LoadFromDataset('', FDQuery1, False,  Params.JsonMode, 'dd/mm/yyyy', '.')
+    Begin
+     JSONValue.LoadFromDataset('', FDQuery1, False,  Params.JsonMode, 'dd/mm/yyyy', '.');
+     Result := JSONValue.ToJson;
+    End
    Else
     JSONValue.LoadFromDataset('employee', FDQuery1, False,  Params.JsonMode);
    Params.ItemsString['result'].AsObject       := JSONValue.ToJSON;
@@ -117,16 +124,28 @@ begin
  End;
 end;
 
+procedure TServerMethodDM.DWServerEvents1EventseventdatetimeReplyEvent(
+  var Params: TDWParams; var Result: string);
+begin
+ Params.ItemsString['result'].AsDateTime := Params.ItemsString['mydatetime'].AsDateTime + 1;
+end;
+
+procedure TServerMethodDM.DWServerEvents1EventseventintReplyEvent(
+  var Params: TDWParams; var Result: string);
+begin
+ Params.ItemsString['result'].AsInteger := Random(Params.ItemsString['mynumber'].AsInteger);
+end;
+
 procedure TServerMethodDM.DWServerEvents1EventsgetemployeeDWReplyEvent(
   var Params: TDWParams; var Result: string);
 begin
- employeeReplyEvent(Params, Params.JsonMode);
+ employeeReplyEvent(Params, Params.JsonMode, Result);
 end;
 
 procedure TServerMethodDM.DWServerEvents1EventsgetemployeeReplyEvent(
   var Params: TDWParams; var Result: string);
 Begin
- employeeReplyEvent(Params, Params.JsonMode);
+ employeeReplyEvent(Params, Params.JsonMode, Result);
 End;
 
 procedure TServerMethodDM.DWServerEvents1EventsloaddataseteventReplyEvent(

@@ -307,7 +307,7 @@ begin
  DWClientEvents1.CreateDWParams('getemployee', dwParams);
  DWClientEvents1.SendEvent('getemployee', dwParams, vErrorMessage, vNativeResult);
  dwParams.Free;
- If vErrorMessage = '' Then
+ If vNativeResult <> '' Then
   Showmessage(vNativeResult)
  Else
   Showmessage(vErrorMessage);

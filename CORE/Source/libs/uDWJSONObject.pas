@@ -11,10 +11,12 @@ Uses
    uDWConstsData, memds, LConvEncoding
   {$ELSE}
    {$IF CompilerVersion > 21} // Delphi 2010 pra cima
-    System.SysUtils, System.Classes, uDWJSONTools, uDWConsts, uDWJSON,
+    System.SysUtils, System.Classes, uDWJSONTools, uDWConsts,
     uDWConstsData, IdGlobal, System.Rtti, Data.DB, Soap.EncdDecd
     {$IF Defined(HAS_FMX)} // Alteardo para IOS Brito
      , System.json, FMX.Types
+    {$ELSE}
+     , uDWJSON
     {$IFEND}
     {$IFDEF RESJEDI}
     , JvMemoryDataset
@@ -148,7 +150,7 @@ Type
   Procedure SetParamName   (bValue     : String);
   Function  GetAsString : String;
   Procedure SetAsString    (Value      : String);
-  {$IFDEF DEFINE(FPC) Or NOT(DEFINE(POSIX))}
+  {$IFDEF DEFINE(FPC) Or NOT(Defined(HAS_FMX))}
   Function  GetAsWideString : WideString;
   Procedure SetAsWideString(Value      : WideString);
   Function  GetAsAnsiString : AnsiString;
@@ -235,7 +237,7 @@ Type
   Property AsString           : String           Read GetAsString         Write SetAsString;
   Property AsObject           : String           Read GetAsString         Write SetAsObject;
   Property AsByteString       : String           Read GetByteString;
-  {$IFDEF DEFINE(FPC) Or NOT(DEFINE(POSIX))}
+  {$IFDEF DEFINE(FPC) Or NOT(Defined(HAS_FMX))}
   Property AsWideString       : WideString       Read GetAsWideString     Write SetAsWideString;
   Property AsAnsiString       : AnsiString       Read GetAsAnsiString     Write SetAsAnsiString;
   {$ENDIF}
@@ -538,8 +540,7 @@ Begin
   End;
 End;
 
-{$IFDEF POSIX}
-{$IF (NOT Defined(FPC) AND Defined(LINUX))}
+{$IF (NOT Defined(FPC) AND Defined(HAS_FMX))}
 // Alteardo para Lazarus LINUX Brito
 Procedure TDWParams.FromJSON(json: String);
 Var
@@ -576,12 +577,6 @@ Begin
 End;
 {$ELSE}
 Procedure TDWParams.FromJSON(json: String);
-Begin
-  raise Exception.Create('Nao Usado no android)'); // Não usado no android ainda
-End;
-{$IFEND}
-{$ELSE}
-Procedure TDWParams.FromJSON(json: String);
 Var
  bJsonOBJ,
  bJsonValue  : uDWJSON.TJsonObject;
@@ -615,7 +610,7 @@ Begin
   bJsonValue.Free;
  End;
 End;
-{$ENDIF}
+{$IFEND}
 
 Procedure TDWParams.CopyFrom(DWParams : TDWParams);
 Var
@@ -2121,30 +2116,33 @@ Begin
      {$ENDIF}
     Except
     End;
-    //Clean Invalid Fields
-    For A := DestDS.Fields.Count - 1 DownTo 0 Do
-     Begin
-      If DestDS.Fields[A].FieldKind = fkData Then
-       Begin
-        vFindFlag := False;
-        For J := 0 To bJsonArrayB.ElementCount - 1 Do
-         Begin
-          bJsonOBJ := bJsonArrayB.GetObject(J);
-          Try
-           If Trim(TDWJSONObject(bJsonOBJ).pairs[0].Value) <> '' Then
-            Begin
-             vFindFlag := Lowercase(TDWJSONObject(bJsonOBJ).pairs[0].Value) = Lowercase(DestDS.Fields[A].FieldName);
-             If vFindFlag Then
-              Break;
-            End;
-          Finally
-           FreeAndNil(bJsonOBJ);
+   If csDesigning in DestDS.ComponentState Then
+    Begin
+     //Clean Invalid Fields
+     For A := DestDS.Fields.Count - 1 DownTo 0 Do
+      Begin
+       If DestDS.Fields[A].FieldKind = fkData Then
+        Begin
+         vFindFlag := False;
+         For J := 0 To bJsonArrayB.ElementCount - 1 Do
+          Begin
+           bJsonOBJ := bJsonArrayB.GetObject(J);
+           Try
+            If Trim(TDWJSONObject(bJsonOBJ).pairs[0].Value) <> '' Then
+             Begin
+              vFindFlag := Lowercase(TDWJSONObject(bJsonOBJ).pairs[0].Value) = Lowercase(DestDS.Fields[A].FieldName);
+              If vFindFlag Then
+               Break;
+             End;
+           Finally
+            FreeAndNil(bJsonOBJ);
+           End;
           End;
-         End;
-        If Not vFindFlag Then
-         DestDS.Fields.Remove(DestDS.Fields[A]);
-       End;
-     End;
+         If Not vFindFlag Then
+          DestDS.Fields.Remove(DestDS.Fields[A]);
+        End;
+      End;
+    End;
     //Add Set PK Fields
     For J := 0 To bJsonArrayB.ElementCount - 1 Do
      Begin
@@ -2921,7 +2919,8 @@ Begin
  vJSONValue.Binary := vBinary;
 End;
 
-{$IF (NOT Defined(FPC) AND Defined(LINUX))}
+{$IF (NOT Defined(FPC) AND Defined(HAS_FMX))}
+//{$IFNDEF FPC} //Alteardo para IOS Brito
 // Alteardo para Lazarus LINUX Brito
 Procedure TJSONParam.FromJSON(json : String);
 Var

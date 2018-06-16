@@ -1637,8 +1637,8 @@ begin
     Result := VariantArraySortCompare(Value1, Value2);
     Exit;
   end;
-  V1 := @Value1;
-  V2 := @Value2;
+  V1 := PVarData(@Value1);
+  V2 := PVarData(@Value2);
   I1 := V1.VArray.Bounds[0].ElementCount;
   I2 := V2.VArray.Bounds[0].ElementCount;
   if I1 > I2 then
@@ -2668,7 +2668,7 @@ var
 begin
   Assert(Length(Args) = FieldCount, SVarArrayBounds);
   Append;
-  PValue := @Args;
+  PValue := PVarRec(@Args);
   for I := 0 to High(Args) do
   begin
     case FDataType[I] of
@@ -3303,7 +3303,7 @@ begin
   SetLength(FFields, FieldCount);
   FRestrictLength := [];
   FSaveCapacity := 32*1024;
-  PValue := @Args;
+  PValue := PVarRec(@Args);
   for I := 0 to High(Args) do
   begin
     case I mod 3 of
@@ -4765,7 +4765,7 @@ end;
 Procedure TIndexList.DoDelete(Index: Integer);
 begin
   if (Index < 0) or (Index >= FCount) then
-    Error(@SIntListIndexError, Index);
+    Error(PResStringRec(@SIntListIndexError), Index);
   Dec(FCount);
   if Index < FCount then
     System.Move(FList^[Index + 1], FList^[Index],
@@ -4777,7 +4777,7 @@ Procedure TIndexList.DoInsert(RecNo: Integer; IsUpdate: Boolean);
   Procedure DoInsert(Index, Item: Integer);
   begin
     if (Index < 0) or (Index > FCount) then
-      Error(@SIntListIndexError, Index);
+      Error(PResStringRec(@SIntListIndexError), Index);
     if FCount = FCapacity then
       Grow;
     if Index < FCount then
@@ -5009,7 +5009,7 @@ end;
 Function TIndexList.Get(Index: Integer): Integer;
 begin
   if (Index < 0) or (Index >= FCount) then
-    Error(@SIntListIndexError, Index);
+    Error(PResStringRec(@SIntListIndexError), Index);
   Result := FList^[Index];
 end;
 
@@ -5086,7 +5086,7 @@ end;
 Procedure TIndexList.SetCapacity(NewCapacity: Integer);
 begin
   if (NewCapacity < FCount) or (NewCapacity > MaxIndexDataListSize) then
-    Error(@SIntListCapacityError, NewCapacity);
+    Error(PResStringRec(@SIntListCapacityError), NewCapacity);
   if NewCapacity <> FCapacity then
   begin
     ReallocMem(FList, NewCapacity * SizeOf(Integer));
@@ -5099,7 +5099,7 @@ var
   I: Integer;
 begin
   if (NewCount < 0) or (NewCount > MaxIndexDataListSize) then
-    Error(@SIntListCountError, NewCount);
+    Error(PResStringRec(@SIntListCountError), NewCount);
   if NewCount > FCapacity then
     SetCapacity(NewCount);
   if NewCount > FCount then
@@ -5806,7 +5806,7 @@ begin
   begin
     Val('$' + Copy(AValue, 2, 6), x, E);
     if E <> 0 then
-      raise EConvertError.CreateResFmt(@SInvalidColor, [AValue]);
+      raise EConvertError.CreateResFmt(PResStringRec(@SInvalidColor), [AValue]);
     x := ((x and $FF) shl 16) or (x and $FF00) or ((x shr 16) and $FF);
   end else
     Result := IdentToInt(AValue, x, ColorIdents);
@@ -5822,7 +5822,7 @@ begin
   begin
     Val(AValue, x, E);
     if E <> 0 then
-      raise EConvertError.CreateResFmt(@SInvalidColor, [AValue]);
+      raise EConvertError.CreateResFmt(PResStringRec(@SInvalidColor), [AValue]);
     inherited SetAsInteger(x);
   end;
 end;
@@ -7398,7 +7398,7 @@ Begin
                                 // LocalToUTC has a number of the hour a day greater
                                 // several thousand. Sensibly +
                                 if WindowsStopsAt1601 > YearOf(D) then
-                                  raise EConvertError.CreateRes(@STimeEncodeError);
+                                  raise EConvertError.CreateRes(PResStringRec(@STimeEncodeError));
                                 FArray.Data[I] := D;
                                End;
                                {$ENDIF}

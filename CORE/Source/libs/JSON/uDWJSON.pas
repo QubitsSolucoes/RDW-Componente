@@ -378,6 +378,7 @@ Type
 
   (** @abstract(wrapper da classe Double do java) *)
   _Double = class (_Number)
+   Public
      constructor create (s : string); overload;
      constructor create (s : _String); overload;
      constructor create (d : double); overload;
@@ -392,6 +393,7 @@ Type
 
   (** @abstract(wrapper da classe Integer do java) *)
   _Integer = class (_Number)
+  Public
     class function parseInt (s : string; i : integer): integer; overload;
     class function parseInt (s : _String): integer; overload;
     class function toHexString (c : char) : string;

@@ -27,11 +27,24 @@ unit uRESTDWPoolerDB;
 
 interface
 
-uses SysUtils,  Classes,      uDWJSONObject,
+uses SysUtils,  Classes,
      DB,        uRESTDWBase,  uDWPoolerMethod,
      uRESTDWMasterDetailData, uDWConstsData, uDWAbout,
-     uDWMassiveBuffer,        SyncObjs, uDWJSONTools, udwjson,
-     uDWResponseTranslator
+     uDWMassiveBuffer,        SyncObjs, uDWJSONTools,
+     uDWResponseTranslator{$IFNDEF FPC}
+                           {$IF CompilerVersion > 21} // Delphi 2010 pra cima
+                            {$IF Defined(HAS_FMX)} // Alteardo para IOS Brito
+                              , System.json
+                            {$ELSE}
+                             , uDWJSON
+                            {$IFEND}
+                           {$ELSE}
+                            , uDWJSON
+                           {$IFEND}
+                           {$ELSE}
+                           , uDWJSON
+                           {$ENDIF}
+     , uDWJSONObject
      {$IFDEF FPC}
      , uDWConsts,
      {$IFDEF DWMEMTABLE}
@@ -86,6 +99,7 @@ Type
 
 Type
  TFieldDefinition = Class
+ Public
   FieldName : String;
   DataType  : TFieldType;
   Size,
@@ -1345,7 +1359,23 @@ Begin
      JSONValue.LoadFromJSON(vLinesDS);
      vJsonLine := JSONValue.value;
      FreeAndNil(JSONValue);
-     bJsonArray := udwjson.TJsonArray.create(vJsonLine);
+     {$IFNDEF FPC}
+     {$IF CompilerVersion > 21}
+      {$IF Defined(HAS_FMX)}
+      {$ELSE}
+       bJsonArray := TJsonArray.create(vJsonLine); //TODO 13/06/2018
+       For I := 0 To bJsonArray.Length - 1 Do
+        Begin
+         JSONValue := TJSONValue.Create;
+         JSONValue.Encoding := VEncondig;
+         JSONValue.LoadFromJSON(bJsonArray.optJSONObject(I).ToString);
+         JSONValue.Encoded := True;
+         JSONValue.WriteToDataset(dtFull, JSONValue.ToJSON, TRESTDWClientSQL(Datasets[I]));
+         TRESTDWClientSQL(Datasets[I]).CreateMassiveDataset;
+        End;
+      {$IFEND}
+     {$ELSE}
+     bJsonArray := TJsonArray.create(vJsonLine); //TODO 13/06/2018
      For I := 0 To bJsonArray.Length - 1 Do
       Begin
        JSONValue := TJSONValue.Create;
@@ -1355,6 +1385,19 @@ Begin
        JSONValue.WriteToDataset(dtFull, JSONValue.ToJSON, TRESTDWClientSQL(Datasets[I]));
        TRESTDWClientSQL(Datasets[I]).CreateMassiveDataset;
       End;
+     {$IFEND}
+     {$ELSE}
+     bJsonArray := TJsonArray.create(vJsonLine); //TODO 13/06/2018
+     For I := 0 To bJsonArray.Length - 1 Do
+      Begin
+       JSONValue := TJSONValue.Create;
+       JSONValue.Encoding := VEncondig;
+       JSONValue.LoadFromJSON(bJsonArray.optJSONObject(I).ToString);
+       JSONValue.Encoded := True;
+       JSONValue.WriteToDataset(dtFull, JSONValue.ToJSON, TRESTDWClientSQL(Datasets[I]));
+       TRESTDWClientSQL(Datasets[I]).CreateMassiveDataset;
+      End;
+     {$ENDIF}
     Finally
      If bJsonArray <> Nil Then
       FreeAndNil(bJsonArray);

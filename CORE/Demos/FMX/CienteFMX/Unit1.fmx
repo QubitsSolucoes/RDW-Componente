@@ -230,7 +230,7 @@ object Form1: TForm1
                   Touch.InteractiveGestures = [LongTap, DoubleTap]
                   Align = Right
                   TabOrder = 0
-                  Text = '192.168.25.8'
+                  Text = '192.168.25.5'
                   TextSettings.HorzAlign = Center
                   Position.X = 262.000000000000000000
                   Position.Y = 3.000000000000000000
@@ -274,6 +274,16 @@ object Form1: TForm1
                 Size.PlatformDefault = False
                 TabOrder = 2
                 Text = 'Tempo de Resposta:'
+                object bServerTime: TButton
+                  Align = Right
+                  Position.X = 262.000000000000000000
+                  Size.Width = 161.000000000000000000
+                  Size.Height = 40.000000000000000000
+                  Size.PlatformDefault = False
+                  TabOrder = 0
+                  Text = 'Server Time'
+                  OnClick = bServerTimeClick
+                end
               end
             end
           end
@@ -363,7 +373,7 @@ object Form1: TForm1
     Password = 'testserver'
     Proxy = False
     ProxyOptions.Port = 8888
-    PoolerService = '127.0.0.1'
+    PoolerService = '192.168.25.5'
     PoolerPort = 8082
     PoolerName = 'TServerMethodDM.RESTDWPoolerDB1'
     StateConnection.AutoCheck = False
@@ -494,5 +504,160 @@ object Form1: TForm1
       Category = 'Tab'
       Tab = tablista
     end
+  end
+  object RESTClientPooler1: TRESTClientPooler
+    DataCompression = True
+    Encoding = esUtf8
+    hEncodeStrings = False
+    Host = 'localhost'
+    UserName = 'testserver'
+    Password = 'testserver'
+    ProxyOptions.BasicAuthentication = False
+    ProxyOptions.ProxyPort = 0
+    RequestTimeOut = 10000
+    ThreadRequest = False
+    AllowCookies = False
+    HandleRedirects = False
+    Left = 207
+    Top = 133
+  end
+  object DWClientEvents1: TDWClientEvents
+    RESTClientPooler = RESTClientPooler1
+    Events = <
+      item
+        DWParams = <
+          item
+            TypeObject = toParam
+            ObjectDirection = odOUT
+            ObjectValue = ovDateTime
+            ParamName = 'result'
+            Encoded = True
+          end
+          item
+            TypeObject = toParam
+            ObjectDirection = odIN
+            ObjectValue = ovString
+            ParamName = 'inputdata'
+            Encoded = True
+          end
+          item
+            TypeObject = toParam
+            ObjectDirection = odINOUT
+            ObjectValue = ovString
+            ParamName = 'resultstring'
+            Encoded = True
+          end>
+        JsonMode = jmDataware
+        Name = 'servertime'
+      end
+      item
+        DWParams = <
+          item
+            TypeObject = toParam
+            ObjectDirection = odOUT
+            ObjectValue = ovString
+            ParamName = 'result'
+            Encoded = True
+          end>
+        JsonMode = jmDataware
+        Name = 'teste'
+      end
+      item
+        DWParams = <
+          item
+            TypeObject = toParam
+            ObjectDirection = odIN
+            ObjectValue = ovString
+            ParamName = 'sql'
+            Encoded = True
+          end
+          item
+            TypeObject = toParam
+            ObjectDirection = odOUT
+            ObjectValue = ovString
+            ParamName = 'result'
+            Encoded = True
+          end>
+        JsonMode = jmDataware
+        Name = 'loaddatasetevent'
+      end
+      item
+        DWParams = <
+          item
+            TypeObject = toParam
+            ObjectDirection = odOUT
+            ObjectValue = ovString
+            ParamName = 'result'
+            Encoded = False
+          end
+          item
+            TypeObject = toParam
+            ObjectDirection = odOUT
+            ObjectValue = ovString
+            ParamName = 'segundoparam'
+            Encoded = False
+          end>
+        JsonMode = jmPureJSON
+        Name = 'getemployee'
+      end
+      item
+        DWParams = <
+          item
+            TypeObject = toParam
+            ObjectDirection = odOUT
+            ObjectValue = ovString
+            ParamName = 'result'
+            Encoded = False
+          end
+          item
+            TypeObject = toParam
+            ObjectDirection = odINOUT
+            ObjectValue = ovString
+            ParamName = 'segundoparam'
+            Encoded = True
+          end>
+        JsonMode = jmDataware
+        Name = 'getemployeeDW'
+      end
+      item
+        DWParams = <
+          item
+            TypeObject = toParam
+            ObjectDirection = odIN
+            ObjectValue = ovInteger
+            ParamName = 'mynumber'
+            Encoded = True
+          end
+          item
+            TypeObject = toParam
+            ObjectDirection = odOUT
+            ObjectValue = ovInteger
+            ParamName = 'result'
+            Encoded = True
+          end>
+        JsonMode = jmDataware
+        Name = 'eventint'
+      end
+      item
+        DWParams = <
+          item
+            TypeObject = toParam
+            ObjectDirection = odIN
+            ObjectValue = ovDateTime
+            ParamName = 'mydatetime'
+            Encoded = True
+          end
+          item
+            TypeObject = toParam
+            ObjectDirection = odOUT
+            ObjectValue = ovDateTime
+            ParamName = 'result'
+            Encoded = True
+          end>
+        JsonMode = jmDataware
+        Name = 'eventdatetime'
+      end>
+    Left = 207
+    Top = 165
   end
 end

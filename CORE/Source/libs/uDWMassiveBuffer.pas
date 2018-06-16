@@ -6,17 +6,19 @@ interface
 
 uses SysUtils,       Classes,
      DB,             uRESTDWBase,  uDWConsts,
-     uDWConstsData,  uDWJSONTools, udwjson {$IFNDEF FPC}
-                                           {$IF CompilerVersion > 21}
-                                            {$IFDEF POSIX}
-                                            {$IF Defined(ANDROID) or Defined(IOS)} //Alterado para IOS Brito
-                                            ,system.json
-                                            {$else}
-                                            ,system.json
-                                            {$IFEND}
-                                            {$ENDIF}
-                                            {$IFEND}
-                                            {$ENDIF}, uDWJSONObject;
+     uDWConstsData,  uDWJSONTools, {$IFNDEF FPC}
+                           {$IF CompilerVersion > 21} // Delphi 2010 pra cima
+                            {$IF Defined(HAS_FMX)} // Alteardo para IOS Brito
+                              System.json
+                            {$ELSE}
+                             uDWJSON
+                            {$IFEND}
+                           {$ELSE}
+                            uDWJSON
+                           {$IFEND}
+                           {$ELSE}
+                           uDWJSON
+                           {$ENDIF}, uDWJSONObject;
 
 
 
@@ -221,6 +223,7 @@ End;
 
 Type
  TDWMassiveCacheSQLValue = Class
+ Public
   MassiveSQLMode : TMassiveSQLMode;
   SQL            : String;
   Params         : TDWParams;

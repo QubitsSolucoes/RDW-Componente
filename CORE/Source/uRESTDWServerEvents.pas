@@ -27,17 +27,19 @@ interface
 
 Uses
  SysUtils, Classes, uDWJSONObject, uDWConsts, uDWConstsData, uDWAbout,
- uRESTDWBase, uDWJSONTools, uDWJSON {$IFNDEF FPC}
-                                    {$IF CompilerVersion > 21}
-                                    {$IFDEF POSIX}
-                                    {$IF Defined(ANDROID) or Defined(IOS)} //Alterado para IOS Brito
-                                    ,system.json
-                                    {$else}
-                                    ,system.json
-                                    {$IFEND}
-                                    {$ENDIF}
-                                    {$IFEND}
-                                    {$ENDIF};
+ uRESTDWBase, uDWJSONTools{$IFNDEF FPC}
+                           {$IF CompilerVersion > 21} // Delphi 2010 pra cima
+                            {$IF Defined(HAS_FMX)} // Alteardo para IOS Brito
+                              , System.json
+                            {$ELSE}
+                             , uDWJSON
+                            {$IFEND}
+                           {$ELSE}
+                            , uDWJSON
+                           {$IFEND}
+                           {$ELSE}
+                           , uDWJSON
+                           {$ENDIF};
 
 Const
  TServerEventsConst = '{"typeobject":"%s", "objectdirection":"%s", "objectvalue":"%s", "paramname":"%s", "encoded":"%s", "default":"%s"}';
@@ -313,7 +315,7 @@ begin
 end;
 }
 
-{$IFDEF POSIX}
+{$IFDEF Defined(HAS_FMX)}
 Procedure TDWEventList.FromJSON(Value : String);
 Var
  bJsonOBJ,
@@ -382,11 +384,11 @@ Procedure TDWEventList.FromJSON(Value : String);
 Var
  bJsonOBJ,
  bJsonOBJb,
- bJsonOBJc    : {$IFDEF POSIX}system.json.TJsonObject;
+ bJsonOBJc    : {$IFDEF Defined(HAS_FMX)}system.json.TJsonObject;
                 {$ELSE}       udwjson.TJsonObject;{$ENDIF}
  bJsonArray,
  bJsonArrayB,
- bJsonArrayC  : {$IFDEF POSIX}system.json.TJsonArray;
+ bJsonArrayC  : {$IFDEF Defined(HAS_FMX)}system.json.TJsonArray;
                 {$ELSE}       udwjson.TJsonArray;{$ENDIF}
  I, X, Y      : Integer;
  vDWEvent     : TDWEvent;
@@ -804,19 +806,31 @@ Function TDWClientEvents.SendEvent(EventName: String; Var DWParams: TDWParams;
 Var
  vJsonMode : TJsonMode;
 Begin
+ Error := '';
  If vRESTClientPooler <> Nil Then
   Begin
    vJsonMode    := vEventList.EventByName[EventName].vJsonMode;
-   NativeResult := vRESTClientPooler.SendEvent(EventName, DWParams, sePOST, Nil, vJsonMode);
+   Try
+    NativeResult := vRESTClientPooler.SendEvent(EventName, DWParams, sePOST, vJsonMode);
+   Except
+    On E : Exception Do
+    Begin
+     Error := E.Message;
+    End;
+   End;
   End;
 End;
 
-Function TDWClientEvents.SendEvent(EventName: String; Var DWParams: TDWParams;
+Function TDWClientEvents.SendEvent(EventName: String;
+                                   Var DWParams: TDWParams;
                                    Var Error: String): Boolean;
+Var
+ vJsonMode : TJsonMode;
 Begin
  If vRESTClientPooler <> Nil Then
   Begin
-   Error := vRESTClientPooler.SendEvent(EventName, DWParams);
+   vJsonMode    := vEventList.EventByName[EventName].vJsonMode;
+   Error := vRESTClientPooler.SendEvent(EventName, DWParams, sePOST, vJsonMode);
    If Error = TReplyOK Then
     Error := '';
   End;

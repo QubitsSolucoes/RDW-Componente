@@ -26,7 +26,6 @@ Uses
   Vcl.Mask,
   Vcl.Menus,
   URESTDWBase,
-  ServerMethodsUnit1,
   Vcl.ComCtrls,
   FireDAC.Phys.FBDef,
   FireDAC.UI.Intf,

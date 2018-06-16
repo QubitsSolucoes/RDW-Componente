@@ -1371,7 +1371,7 @@ object Form2: TForm2
     end
     object RESTDWClientSQL1FULL_NAME: TStringField
       FieldName = 'FULL_NAME'
-      ReadOnly = True
+      ProviderFlags = []
       Size = 37
     end
   end
@@ -1497,13 +1497,51 @@ object Form2: TForm2
           end
           item
             TypeObject = toParam
-            ObjectDirection = odOUT
+            ObjectDirection = odINOUT
             ObjectValue = ovString
             ParamName = 'segundoparam'
-            Encoded = False
+            Encoded = True
           end>
         JsonMode = jmDataware
         Name = 'getemployeeDW'
+      end
+      item
+        DWParams = <
+          item
+            TypeObject = toParam
+            ObjectDirection = odIN
+            ObjectValue = ovInteger
+            ParamName = 'mynumber'
+            Encoded = True
+          end
+          item
+            TypeObject = toParam
+            ObjectDirection = odOUT
+            ObjectValue = ovInteger
+            ParamName = 'result'
+            Encoded = True
+          end>
+        JsonMode = jmDataware
+        Name = 'eventint'
+      end
+      item
+        DWParams = <
+          item
+            TypeObject = toParam
+            ObjectDirection = odIN
+            ObjectValue = ovDateTime
+            ParamName = 'mydatetime'
+            Encoded = True
+          end
+          item
+            TypeObject = toParam
+            ObjectDirection = odOUT
+            ObjectValue = ovDateTime
+            ParamName = 'result'
+            Encoded = True
+          end>
+        JsonMode = jmDataware
+        Name = 'eventdatetime'
       end>
     Left = 517
     Top = 165
