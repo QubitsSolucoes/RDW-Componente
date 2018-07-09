@@ -17,7 +17,7 @@ uses
  ZSqlProcessor,            uDWConsts,
  uDWConstsData,            uRESTDWPoolerDB,         uDWJSON,
  uDWJSONObject,            uDWMassiveBuffer,        Variants,
- uDWDatamodule,            SysTypes;
+ uDWDatamodule,            SysTypes,                uSystemEvents;
 
 Type
  TRESTDWDriverZeos   = Class(TRESTDWDriver)
@@ -62,6 +62,9 @@ Type
                                  Var Error        : Boolean;
                                  Var MessageError : String) : TJSONValue;Override;
   Procedure Close;Override;
+  Class Procedure CreateConnection(Const ConnectionDefs : TConnectionDefs;
+                                   Var Connection       : TObject);      Override;
+  Procedure PrepareConnection     (Var ConnectionDefs : TConnectionDefs);Override;
  Published
   Property Connection : TZConnection Read GetConnection Write SetConnection;
 End;
@@ -650,6 +653,13 @@ Begin
  {$IFNDEF FPC}Inherited;{$ENDIF}
  If Connection <> Nil Then
   Connection.Disconnect;
+End;
+
+Class Procedure TRESTDWDriverZeos.CreateConnection(Const ConnectionDefs : TConnectionDefs;
+                                                   Var Connection       : TObject);
+Begin
+ {$IFNDEF FPC}Inherited;{$ENDIF}
+
 End;
 
 function TRESTDWDriverZeos.ExecuteCommand(SQL              : String;
@@ -2140,6 +2150,12 @@ Begin
  vTempQuery.Free;
  If bJsonArray <> Nil Then
   FreeAndNil(bJsonArray);
+End;
+
+Procedure TRESTDWDriverZeos.PrepareConnection(Var ConnectionDefs : TConnectionDefs);
+Begin
+ {$IFNDEF FPC}Inherited;{$ENDIF}
+
 End;
 
 Function TRESTDWDriverZeos.InsertMySQLReturnID(SQL              : String;

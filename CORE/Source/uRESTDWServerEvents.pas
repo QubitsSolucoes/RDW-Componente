@@ -21,7 +21,9 @@ unit uRESTDWServerEvents;
  Mizael Rocha               - Member Tester and DEMO Developer.
  Flávio Motta               - Member Tester and DEMO Developer.
  Itamar Gaucho              - Member Tester and DEMO Developer.
+ Ico Menezes                - Member Tester and DEMO Developer.
 }
+
 
 interface
 
@@ -159,7 +161,9 @@ Type
  Protected
  Private
   vIgnoreInvalidParams : Boolean;
-  vEventList      : TDWEventList;
+  vEventList           : TDWEventList;
+  vAccessTag,
+  vServerContext       : String;
  Public
   Destructor  Destroy; Override;
   Constructor Create(AOwner : TComponent);Override; //Cria o Componente
@@ -168,15 +172,16 @@ Type
  Published
   Property    IgnoreInvalidParams : Boolean      Read vIgnoreInvalidParams Write vIgnoreInvalidParams;
   Property    Events              : TDWEventList Read vEventList           Write vEventList;
+  Property    AccessTag           : String       Read vAccessTag           Write vAccessTag;
+  Property    ContextName         : String       Read vServerContext       Write vServerContext;
 End;
 
 Type
-
  { TDWClientEvents }
-
  TDWClientEvents = Class(TDWComponent)
  Protected
  Private
+  vServerEventName  : String;
   vEditParamList,
   vGetEvents        : Boolean;
   vEventList        : TDWEventList;
@@ -195,6 +200,7 @@ Type
   Procedure   ClearEvents;
   Property    GetEvents        : Boolean           Read vGetEvents        Write GetOnlineEvents;
  Published
+  Property    ServerEventName  : String            Read vServerEventName  Write vServerEventName;
   Property    RESTClientPooler : TRESTClientPooler Read vRESTClientPooler Write vRESTClientPooler;
   Property    Events           : TDWEventList      Read vEventList        Write SetEventList;
 End;
@@ -742,6 +748,11 @@ Begin
   Exit;
  DWParams                        := TDWParams.Create;
  JSONParam                       := TJSONParam.Create(RESTClientPoolerExec.Encoding);
+ JSONParam.ParamName             := 'dwservereventname';
+ JSONParam.ObjectDirection       := odIn;
+ JSONParam.AsString              := vServerEventName;
+ DWParams.Add(JSONParam);
+ JSONParam                       := TJSONParam.Create(RESTClientPoolerExec.Encoding);
  JSONParam.ParamName             := 'Error';
  JSONParam.ObjectDirection       := odInOut;
  JSONParam.AsBoolean             := False;
@@ -811,7 +822,7 @@ Begin
   Begin
    vJsonMode    := vEventList.EventByName[EventName].vJsonMode;
    Try
-    NativeResult := vRESTClientPooler.SendEvent(EventName, DWParams, sePOST, vJsonMode);
+    NativeResult := vRESTClientPooler.SendEvent(EventName, DWParams, sePOST, vJsonMode, vServerEventName);
    Except
     On E : Exception Do
     Begin
@@ -830,7 +841,7 @@ Begin
  If vRESTClientPooler <> Nil Then
   Begin
    vJsonMode    := vEventList.EventByName[EventName].vJsonMode;
-   Error := vRESTClientPooler.SendEvent(EventName, DWParams, sePOST, vJsonMode);
+   Error := vRESTClientPooler.SendEvent(EventName, DWParams, sePOST, vJsonMode, vServerEventName);
    If Error = TReplyOK Then
     Error := '';
   End;

@@ -10,12 +10,13 @@ object dwCGIService: TdwCGIService
   Width = 150
   PPI = 96
   object RESTServiceCGI1: TRESTServiceCGI
-    ServerParams.HasAuthentication = True
+    ServerParams.HasAuthentication = False
     ServerParams.UserName = 'testserver'
     ServerParams.Password = 'testserver'
     Encoding = esUtf8
     ForceWelcomeAccess = False
     ServerContext = 'cgieflex/dwCGIServer.exe'
+    RootPath = '/'
     left = 64
     top = 48
   end

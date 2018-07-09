@@ -835,16 +835,33 @@ Function TJSONValue.FormatValue(bValue : String) : String;
 Var
  aResult    : String;
  vInsertTag : Boolean;
+ Ini,
+ Fin        : Integer; //Paleativo
 Begin
  aResult    := StringReplace(bValue, #000, '', [rfReplaceAll]);
  vInsertTag := vObjectValue In [ovDate,    ovTime,    ovDateTime,
                                 ovTimestamp];
+ {$IFDEF HAS_FMX} //Alterado Ico Menezes
+  ini        := 1;
+  Fin        := 0;
+ {$ELSE}
+  Ini := InitStrPos;
+  Fin := FinalStrPos;
+ {$ENDIF} //alterado ICo Menezes
+
+// {$IFDEF HAS_FMX} //Alteardo para IOS Brito
+// Ini := 1;
+// Fin := 0;
+// {$ELSE} //Alteardo para IOS Brito
+// Ini := InitStrPos;
+// Fin := FinalStrPos;
+// {$ENDIF} //Alteardo para IOS Brito
  If Trim(aResult) <> '' Then
   Begin
-   If (aResult[InitStrPos] = '"') And
-      (aResult[Length(aResult) - FinalStrPos] = '"') Then
+   If (aResult[Ini] = '"') And
+      (aResult[Length(aResult) - Fin] = '"') Then
     Begin
-     Delete(aResult, InitStrPos + FinalStrPos, 1);
+     Delete(aResult, 1, 1);
      Delete(aResult, Length(aResult), 1);
     End;
   End;
@@ -3288,7 +3305,7 @@ Begin
  vBinary := vObjectValue in [ovBlob, ovGraphic, ovOraBlob, ovOraClob];
  vJSONValue.ObjectValue := vObjectValue;
  If (Encode) And Not(vBinary) Then
-  WriteValue(EncodeStrings(aValue{$IFDEF FPC}, csUndefined{$ENDIF}))
+  WriteValue(EncodeStrings(utf8encode(aValue){$IFDEF FPC}, csUndefined{$ENDIF}))
  Else
   WriteValue(aValue);
  vJSONValue.vBinary := vBinary;

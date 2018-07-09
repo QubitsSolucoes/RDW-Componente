@@ -2,7 +2,6 @@ object ServerMethodDM: TServerMethodDM
   OldCreateOrder = False
   OnCreate = ServerMethodDataModuleCreate
   Encoding = esUtf8
-  OnReplyEvent = ServerMethodDataModuleReplyEvent
   OnMassiveProcess = ServerMethodDataModuleMassiveProcess
   Height = 178
   Width = 264
@@ -152,7 +151,14 @@ object ServerMethodDM: TServerMethodDM
         JsonMode = jmPureJSON
         Name = 'getemployee'
         OnReplyEvent = DWServerEvents1EventsgetemployeeReplyEvent
+      end
+      item
+        DWParams = <>
+        JsonMode = jmPureJSON
+        Name = 'helloworld'
+        OnReplyEvent = DWServerEvents1EventshelloworldReplyEvent
       end>
+    ContextName = 'se1'
     Left = 80
     Top = 103
   end
@@ -162,5 +168,37 @@ object ServerMethodDM: TServerMethodDM
       '')
     Left = 137
     Top = 15
+  end
+  object DWServerContext1: TDWServerContext
+    IgnoreInvalidParams = False
+    ContextList = <
+      item
+        DWParams = <
+          item
+            TypeObject = toParam
+            ObjectDirection = odIN
+            ObjectValue = ovString
+            ParamName = 'entrada'
+            Encoded = True
+          end>
+        ContentType = 'text/html'
+        ContextName = 'init'
+        OnReplyRequest = DWServerContext1ContextListinitReplyRequest
+      end
+      item
+        DWParams = <>
+        ContentType = 'text/html'
+        ContextName = 'index'
+        OnReplyRequest = DWServerContext1ContextListindexReplyRequest
+      end
+      item
+        DWParams = <>
+        ContentType = 'text/html'
+        ContextName = 'openfile'
+        OnReplyRequestStream = DWServerContext1ContextListopenfileReplyRequestStream
+      end>
+    BaseContext = 'www'
+    Left = 184
+    Top = 104
   end
 end

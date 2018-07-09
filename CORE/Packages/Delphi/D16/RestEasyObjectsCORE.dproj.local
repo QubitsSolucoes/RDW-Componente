@@ -4,6 +4,7 @@
     <Transaction>2017/06/20 20:49:31.000.324,D:\Meus Dados\Projetos\SUGV\Componentes\XyberPower\REST_Controls\CORE\Packages\Delphi\RestEasyObjectsCORE.dproj=C:\Users\XyberX\Documents\Embarcadero\Studio\Projects\Package1.dproj</Transaction>
     <Transaction>2017/06/20 20:51:46.000.630,D:\Meus Dados\Projetos\SUGV\Componentes\XyberPower\REST_Controls\CORE\Packages\Delphi\uRESTDWBase.pas=D:\Meus Dados\Projetos\SUGV\Componentes\XyberPower\REST_Controls\CORE\Packages\Delphi\Unit1.pas</Transaction>
     <Transaction>2017/06/20 21:13:38.000.307,D:\Meus Dados\Projetos\SUGV\Componentes\XyberPower\REST_Controls\CORE\Packages\Delphi\uRESTDWReg.pas=D:\Meus Dados\Projetos\SUGV\Componentes\XyberPower\REST_Controls\CORE\Packages\Delphi\Unit1.pas</Transaction>
+    <Transaction>2018/06/18 17:50:15.000.980,=dcldb.dcp</Transaction>
   </Transactions>
 	<ActiveMobileDevice>
 		<NoProfile iOSSimulator="iPhone5"/>
@@ -37,6 +38,7 @@
     <File Path="..\..\..\Source\uRESTDWPoolerDB.pas"/>
     <File Path="..\..\..\Source\uRESTDWReg.pas"/>
     <File Path="dbrtl.dcp"/>
+    <File Path="dcldb.dcp"/>
     <File Path="designide.dcp"/>
     <File Path="dsnap.dcp"/>
     <File Path="IndyCore.dcp"/>

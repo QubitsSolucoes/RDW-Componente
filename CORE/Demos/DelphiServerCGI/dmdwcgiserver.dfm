@@ -15,7 +15,9 @@ object dwCGIService: TdwCGIService
     ServerParams.UserName = 'testserver'
     ServerParams.Password = 'testserver'
     Encoding = esUtf8
+    ForceWelcomeAccess = False
     ServerContext = 'restdataware'
+    RootPath = '/'
     Left = 120
     Top = 112
   end

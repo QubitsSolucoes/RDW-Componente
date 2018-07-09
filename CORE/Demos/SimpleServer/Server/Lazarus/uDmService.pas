@@ -5,7 +5,8 @@ interface
 uses
   SysUtils, Classes, IBConnection, sqldb, SysTypes, uDWDatamodule,
   uDWJSONObject, Dialogs, ServerUtils, uDWConsts, uDWConstsData,
-  RestDWServerFormU, uRESTDWPoolerDB, uRESTDWServerEvents,  uRestDWLazDriver;
+  RestDWServerFormU, uRESTDWPoolerDB, uRESTDWServerEvents, uRESTDWServerContext,
+  uRestDWLazDriver;
 
 
 type
@@ -13,12 +14,17 @@ type
   { TServerMethodDM }
 
   TServerMethodDM = class(TServerMethodDataModule)
+    DWServerContext1: TDWServerContext;
     DWServerEvents1: TDWServerEvents;
     RESTDWDriverFD1: TRESTDWLazDriver;
     RESTDWPoolerDB1: TRESTDWPoolerDB;
     Server_FDConnection: TIBConnection;
     FDQuery1: TSQLQuery;
     SQLTransaction1: TSQLTransaction;
+    procedure DWServerContext1ContextListindexReplyRequest(
+      const Params: TDWParams; Var ContentType, Result: String);
+    procedure DWServerContext1ContextListinitReplyRequest(
+      const Params: TDWParams; Var ContentType, Result: String);
     procedure DWServerEvents1EventsgetemployeeReplyEvent(Var Params: TDWParams;
       Var Result: String);
     procedure DWServerEvents1EventsservertimeReplyEvent(Var Params: TDWParams;
@@ -70,12 +76,47 @@ begin
    JSONValue.Encoding := Encoding;
    JSONValue.Encoded  := False;
    JSONValue.LoadFromDataset('employee', FDQuery1, False,  Params.JsonMode, '');
-   Params.ItemsString['result'].AsString := JSONValue.ToJSON;
-   Params.ItemsString['segundoparam'].AsString := 'teste de array';
+   Result := JSONValue.ToJSON;
   Except
   End;
  Finally
   JSONValue.Free;
+ End;
+end;
+
+procedure TServerMethodDM.DWServerContext1ContextListinitReplyRequest(
+  const Params: TDWParams; Var ContentType, Result: String);
+begin
+ Result := '<!DOCTYPE html> ' +
+           '<html>' +
+           '  <head>' +
+           '    <meta charset="utf-8">' +
+           '    <title>My test page</title>' +
+           '    <link href=''http://fonts.googleapis.com/css?family=Open+Sans'' rel=''stylesheet'' type=''text/css''>' +
+           '  </head>' +
+           '  <body>' +
+           '    <h1>REST Dataware (Lazarus) is cool</h1>' +
+           '    <img src="http://www.resteasyobjects.com.br/myimages/LogoDW.png" alt="The REST Dataware logo: Powerfull Web Service.">' +
+           '  ' +
+           '  ' +
+           '    <p>working together to keep the Internet alive and accessible, help us to help you. Be free.</p>' +
+           ' ' +
+           '    <p><a href="http://www.restdw.com.br/">REST Dataware site</a> to learn and help us.</p>' +
+           '  </body>' +
+           '</html>';
+end;
+
+procedure TServerMethodDM.DWServerContext1ContextListindexReplyRequest(
+  const Params: TDWParams; Var ContentType, Result: String);
+var
+ s : TStringlist;
+begin
+ s := TStringlist.Create;
+ Try
+  s.LoadFromFile('.\www\index.html');
+  Result := s.Text;
+ Finally
+  s.Free;
  End;
 end;
 

@@ -66,7 +66,9 @@ contains
   uDWSqlEditor in '..\..\..\Source\uDWSqlEditor.pas' {FrmDWSqlEditor},
   uDWAbout in '..\..\..\Source\uDWAbout.pas',
   uAboutForm in '..\..\..\Source\uAboutForm.pas' {frm_About},
-  uDWResponseTranslator in '..\..\..\Source\uDWResponseTranslator.pas';
+  uDWResponseTranslator in '..\..\..\Source\uDWResponseTranslator.pas',
+  uSystemEvents in '..\..\..\Source\libs\uSystemEvents.pas',
+  uRESTDWServerContext in '..\..\..\Source\uRESTDWServerContext.pas';
 
 end.
 

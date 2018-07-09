@@ -41,10 +41,10 @@ Function  GetPairJSON  (Tag,
   Function  DecodeBase64 (Const Value : String)             : String;
   Function  EncodeBase64 (Const Value : String)             : String;
 {$ELSE}
-  Function  DecodeBase64 (Const Value : AnsiString
-                          {$IFDEF FPC};DatabaseCharSet : TDatabaseCharSet{$ENDIF}) : AnsiString;
-  Function  EncodeBase64 (Const Value : AnsiString
-                          {$IFDEF FPC};DatabaseCharSet : TDatabaseCharSet{$ENDIF})             : AnsiString;
+  Function  DecodeBase64 (Const Value : String
+                          {$IFDEF FPC};DatabaseCharSet : TDatabaseCharSet{$ENDIF}) : String;
+  Function  EncodeBase64 (Const Value : String
+                          {$IFDEF FPC};DatabaseCharSet : TDatabaseCharSet{$ENDIF}) : String;
 {$IFEND}
 {$IFEND}
 Function  EncodeStrings(Value       : String
@@ -227,7 +227,14 @@ Begin
 End;
 {$ENDIF}
 
-Function Encode64(const S: string; const ByteEncoding: IIdTextEncoding = nil): string;
+Function Encode64(const S: string; const ByteEncoding: {$IFNDEF FPC}{$IF (CompilerVersion = 23) OR (CompilerVersion = 24)}
+                                                        TIdTextEncoding
+                                                       {$ELSE}
+                                                        IIdTextEncoding
+                                                       {$IFEND}
+                                                       {$ELSE}
+                                                        IIdTextEncoding
+                                                       {$ENDIF} = nil): string;
 Begin
  {$IF Defined(ANDROID) OR Defined(IOS)} //Alterado para IOS Brito
   Result := TIdEncoderMIME.EncodeString(S, IndyTextEncoding_utf8);
@@ -236,7 +243,12 @@ Begin
    Result := EncodeStringBase64(S);
   {$ELSE}
    {$if CompilerVersion > 21} // Delphi 2010 pra cima
-    Result := TIdEncoderMIME.EncodeString(S, IndyTextEncoding_utf8);
+    Result := TIdEncoderMIME.EncodeString(S, {$IFNDEF FPC}{$IF (CompilerVersion = 23) OR (CompilerVersion = 24)}
+                                             IndyUTF8Encoding
+                                            {$ELSE}
+                                             IndyTextEncoding_utf8
+                                            {$IFEND}
+                                            {$ENDIF});
    {$ELSE}
     Result := TIdEncoderMIME.EncodeString(S, IndyTextEncoding_ASCII);
    {$IFEND}
@@ -293,7 +305,14 @@ Begin
 End;
 {$ENDIF}
 
-Function Decode64(const S: string; const ByteEncoding: IIdTextEncoding = nil): string;
+Function Decode64(const S: string; const ByteEncoding: {$IFNDEF FPC}{$IF (CompilerVersion = 23) OR (CompilerVersion = 24)}
+                                                        TIdTextEncoding
+                                                       {$ELSE}
+                                                        IIdTextEncoding
+                                                       {$IFEND}
+                                                       {$ELSE}
+                                                        IIdTextEncoding
+                                                       {$ENDIF} = nil): string;
 Begin
  {$IF Defined(ANDROID) OR Defined(IOS)} //Alterado para IOS Brito
   Result := UTF8Decode(TIdDecoderMIME.DecodeString(S, IndyTextEncoding_utf8));
@@ -302,7 +321,12 @@ Begin
    Result := DecodeStringBase64(S);
   {$ELSE}
    {$if CompilerVersion > 21} // Delphi 2010 pra cima
-    Result := TIdDecoderMIME.DecodeString(S, IndyTextEncoding_utf8);
+    Result := TIdDecoderMIME.DecodeString(S, {$IFNDEF FPC}{$IF (CompilerVersion = 23) OR (CompilerVersion = 24)}
+                                             IndyUTF8Encoding
+                                            {$ELSE}
+                                             IndyTextEncoding_utf8
+                                            {$IFEND}
+                                            {$ENDIF});
    {$ELSE}
     Result := UTF8Decode(TIdDecoderMIME.DecodeString(S, IndyTextEncoding_ASCII));
    {$IFEND}
@@ -316,8 +340,8 @@ Function DecodeBase64(Const Value : String) : String;
 {$IF (NOT Defined(FPC) AND Defined(LINUX))} //Alteardo para Lazarus LINUX Brito
   Function  DecodeBase64 (Const Value : String)             : String;
 {$ELSE}
-  Function DecodeBase64(Const Value : AnsiString
-                       {$IFDEF FPC};DatabaseCharSet : TDatabaseCharSet{$ENDIF}) : AnsiString;
+  Function DecodeBase64(Const Value : String
+                       {$IFDEF FPC};DatabaseCharSet : TDatabaseCharSet{$ENDIF}) : String;
   {$IFEND}
 {$IFEND}
 Var
@@ -346,8 +370,8 @@ Function EncodeBase64(Const Value : String) : String;
 {$IF (NOT Defined(FPC) AND Defined(LINUX))} //Alteardo para Lazarus LINUX Brito
 Function EncodeBase64(Const Value : String) : String;
 {$ELSE}
-  Function EncodeBase64(Const Value : AnsiString
-                        {$IFDEF FPC};DatabaseCharSet : TDatabaseCharSet{$ENDIF}) : AnsiString;
+  Function EncodeBase64(Const Value : String
+                        {$IFDEF FPC};DatabaseCharSet : TDatabaseCharSet{$ENDIF}) : String;
 {$IFEND}
 {$IFEND}
 Var
@@ -377,7 +401,12 @@ Begin
  Encoder := TIdEncoderMIME.Create(nil);
  {$IFNDEF FPC}
   {$if CompilerVersion > 21}
-   Result := ToBytes(Encoder.Encode(Value, IndyTextEncoding_ASCII));
+   Result := ToBytes(Encoder.Encode(Value, {$IFNDEF FPC}{$IF (CompilerVersion = 23) OR (CompilerVersion = 24)}
+                                            IndyASCIIEncoding
+                                           {$ELSE}
+                                            IndyTextEncoding_ASCII
+                                           {$IFEND}
+                                           {$ENDIF}));
   {$ELSE}
    Result := ToBytes(Encoder.Encode(Value{$if CompilerVersion > 21}, IndyTextEncoding(Encoding){$IFEND}));
   {$IFEND}

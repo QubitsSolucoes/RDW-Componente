@@ -3,7 +3,7 @@ unit uDWDatamodule;
 interface
 
 Uses
-  SysUtils, Classes, SysTypes, uDWJSONObject, uDWConstsData, uRESTDWServerEvents;
+  SysUtils, Classes, SysTypes, uSystemEvents, uDWJSONObject, uDWConstsData, uRESTDWServerEvents;
 
  Type
   TServerMethodDataModule = Class(TDataModule)

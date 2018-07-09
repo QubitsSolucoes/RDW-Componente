@@ -9,7 +9,7 @@ uses
   FireDAC.DApt.Intf, Data.DB, Vcl.Imaging.pngimage, Vcl.ExtCtrls, Vcl.StdCtrls,
   Vcl.Grids, Vcl.DBGrids, FireDAC.Comp.DataSet, FireDAC.Comp.Client,
   uDWJSONObject, uDWConsts, uRESTDWBase, uRESTDWServerEvents, System.Actions,
-  uDWConstsData, Vcl.ActnList, uDWDataset;
+  uDWConstsData, Vcl.ActnList, uDWDataset, uDWAbout;
 
 type
   TForm3 = class(TForm)

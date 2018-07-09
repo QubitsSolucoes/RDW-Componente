@@ -6,11 +6,11 @@ program dwCGIServer;
 
 
 uses
-  fpCGI, fpHTTP, HTTPDefs,
+  fpCGI,
   {$IFNDEF APACHE}
-  fpWeb, fpHTTPApp, uConsts,
+  HTTPDefs, fpHTTP, fpWeb, fpHTTPApp,
   {$ENDIF}
-  dmdwcgiserver, uDmService;
+  uConsts, dmdwcgiserver, uDmService;
 
 begin
   {$IFNDEF APACHE}

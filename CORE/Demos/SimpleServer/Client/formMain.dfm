@@ -1371,15 +1371,16 @@ object Form2: TForm2
     end
     object RESTDWClientSQL1FULL_NAME: TStringField
       FieldName = 'FULL_NAME'
-      ProviderFlags = []
+      ReadOnly = True
       Size = 37
     end
   end
   object RESTDWDataBase1: TRESTDWDataBase
     OnConnection = RESTDWDataBase1Connection
     OnBeforeConnect = RESTDWDataBase1BeforeConnect
-    Active = False
+    Active = True
     Compression = True
+    MyIP = '127.0.0.1'
     Login = 'testserver'
     Password = 'testserver'
     Proxy = False
@@ -1394,12 +1395,16 @@ object Form2: TForm2
     Encoding = esUtf8
     StrsTrim = False
     StrsEmpty2Null = False
-    StrsTrim2Len = True
+    StrsTrim2Len = False
     OnWork = RESTDWDataBase1Work
     OnWorkBegin = RESTDWDataBase1WorkBegin
     OnWorkEnd = RESTDWDataBase1WorkEnd
     OnStatus = RESTDWDataBase1Status
     ParamCreate = True
+    ClientConnectionDefs.Active = True
+    ClientConnectionDefs.ConnectionDefs.DriverType = dbtFirebird
+    ClientConnectionDefs.ConnectionDefs.DatabaseName = 'employee.fdb'
+    ClientConnectionDefs.ConnectionDefs.dbPort = -1
     Left = 488
     Top = 208
   end
@@ -1408,6 +1413,7 @@ object Form2: TForm2
     Top = 56
   end
   object DWClientEvents1: TDWClientEvents
+    ServerEventName = 'TServerMethodDM.DWServerEvents1'
     RESTClientPooler = RESTClientPooler1
     Events = <
       item
@@ -1440,18 +1446,6 @@ object Form2: TForm2
         DWParams = <
           item
             TypeObject = toParam
-            ObjectDirection = odOUT
-            ObjectValue = ovString
-            ParamName = 'result'
-            Encoded = True
-          end>
-        JsonMode = jmDataware
-        Name = 'teste'
-      end
-      item
-        DWParams = <
-          item
-            TypeObject = toParam
             ObjectDirection = odIN
             ObjectValue = ovString
             ParamName = 'sql'
@@ -1474,13 +1468,6 @@ object Form2: TForm2
             ObjectDirection = odOUT
             ObjectValue = ovString
             ParamName = 'result'
-            Encoded = False
-          end
-          item
-            TypeObject = toParam
-            ObjectDirection = odOUT
-            ObjectValue = ovString
-            ParamName = 'segundoparam'
             Encoded = False
           end>
         JsonMode = jmPureJSON
@@ -1542,6 +1529,18 @@ object Form2: TForm2
           end>
         JsonMode = jmDataware
         Name = 'eventdatetime'
+      end
+      item
+        DWParams = <
+          item
+            TypeObject = toParam
+            ObjectDirection = odOUT
+            ObjectValue = ovString
+            ParamName = 'result'
+            Encoded = False
+          end>
+        JsonMode = jmPureJSON
+        Name = 'helloworld'
       end>
     Left = 517
     Top = 165
@@ -1561,5 +1560,17 @@ object Form2: TForm2
     HandleRedirects = False
     Left = 489
     Top = 165
+  end
+  object DWClientEvents2: TDWClientEvents
+    ServerEventName = 'TServerMethodDM.DWServerEvents2'
+    RESTClientPooler = RESTClientPooler1
+    Events = <
+      item
+        DWParams = <>
+        JsonMode = jmPureJSON
+        Name = 'helloworld'
+      end>
+    Left = 568
+    Top = 168
   end
 end

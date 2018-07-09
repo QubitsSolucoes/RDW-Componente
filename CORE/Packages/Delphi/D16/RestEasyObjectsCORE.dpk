@@ -6,7 +6,7 @@ package RestEasyObjectsCORE;
 {$ALIGN 8}
 {$ASSERTIONS ON}
 {$BOOLEVAL OFF}
-{$DEBUGINFO OFF}
+{$DEBUGINFO ON}
 {$EXTENDEDSYNTAX ON}
 {$IMPORTEDDATA ON}
 {$IOCHECKS ON}
@@ -36,7 +36,8 @@ requires
   IndySystem,
   IndyProtocols,
   IndyCore,
-  designide;
+  designide,
+  dcldb;
 
 contains
   uRESTDWBase in '..\..\..\Source\uRESTDWBase.pas',
@@ -48,7 +49,6 @@ contains
   uDWConsts in '..\..\..\Source\libs\uDWConsts.pas',
   uDWJSONObject in '..\..\..\Source\libs\uDWJSONObject.pas',
   uDWJSONTools in '..\..\..\Source\libs\uDWJSONTools.pas',
-  uDWJSONParser in '..\..\..\Source\libs\JSON\uDWJSONParser.pas',
   uzliblaz in '..\..\..\Source\libs\uzliblaz.pas',
   uDWPoolerMethod in '..\..\..\Source\uDWPoolerMethod.pas',
   uDWConstsData in '..\..\..\Source\libs\uDWConstsData.pas',

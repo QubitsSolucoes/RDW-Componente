@@ -4,7 +4,7 @@ Interface
 
 Uses
   IdURI, IdGlobal, SysUtils, Classes, ServerUtils, uRESTDWBase, uDWConsts,
-  uDWJSONObject, uDWConstsData, uDWMassiveBuffer, uRESTDWServerEvents;
+  uDWJSONObject, uDWConstsData, uDWMassiveBuffer, uRESTDWServerEvents, uSystemEvents;
 
 Type
  TReplyEvent     = Procedure(SendType           : TSendEvent;
@@ -12,7 +12,6 @@ Type
                              Var Params         : TDWParams;
                              Var Result         : String;
                              AccessTag          : String) Of Object;
- TWelcomeMessage = Procedure(Welcomemsg, AccessTag : String;Var Accept : Boolean) Of Object;
  TMassiveProcess = Procedure(Var MassiveDataset : TMassiveDatasetBuffer; Var Ignore : Boolean) Of Object;
 
 Type
@@ -24,10 +23,11 @@ Type
 
 Type
   TServerUtils = Class
-    Class Function ParseRESTURL(Const Cmd: String;vEncoding : TEncodeSelect): TDWParams;
+    Class Function ParseRESTURL(Const Cmd: String;vEncoding : TEncodeSelect; Var UrlMethod, urlContext : String): TDWParams;
     Class Function Result2JSON(wsResult: TResultErro): String;
-    Class Function ParseWebFormsParams(Params: TStrings; Const URL: String;
-                                       Var UrlMethod: String;vEncoding: TEncodeSelect;MethodType : String = 'POST'): TDWParams;
+    Class Function ParseWebFormsParams(Params: TStrings; Const URL, Query: String;
+                                       Var UrlMethod, urlContext : String;
+                                       vEncoding: TEncodeSelect;MethodType : String = 'POST'): TDWParams;
   End;
 
 Type
@@ -51,8 +51,9 @@ Type
 implementation
 
 
-Class Function TServerUtils.ParseRESTURL(Const Cmd: String;vEncoding: TEncodeSelect): TDWParams;
+Class Function TServerUtils.ParseRESTURL(Const Cmd: String;vEncoding: TEncodeSelect; Var UrlMethod, urlContext : String): TDWParams;
 Var
+ vTempData,
   NewCmd: String;
   ArraySize,
   iBar1,
@@ -73,6 +74,8 @@ Begin
  Result := Nil;
  JSONParam := Nil;
  NewCmd := Cmd;
+ urlContext := '';
+ UrlMethod  := '';
  If (CountExpression(NewCmd, '/') > 0) Then
   Begin
    ArraySize := CountExpression(NewCmd, '/');
@@ -83,10 +86,17 @@ Begin
    Delete(NewCmd, 1, iBar1);
    For Cont := 0 to ArraySize - 1 Do
     Begin
-     JSONParam := TJSONParam.Create(Result.Encoding);
-     IBar2 := Pos('/', NewCmd);
-     JSONParam.ParamName := Format('PARAM%d', [Cont + 1]);
-     JSONParam.SetValue(TIdURI.URLDecode(Copy(NewCmd, 1, IBar2 - 1), GetEncodingID(vEncoding)));
+     IBar2     := Pos('/', NewCmd);
+     vTempData := TIdURI.URLDecode(Copy(NewCmd, 1, IBar2 - 1), GetEncodingID(vEncoding));
+     If (Cont = (ArraySize - 1)) Then
+      Begin
+       UrlMethod := Copy(NewCmd, 1, IBar2 - 1);
+       JSONParam := TJSONParam.Create(Result.Encoding);
+       JSONParam.ParamName := Format('PARAM%d', [0]);
+       JSONParam.SetValue(vTempData);
+      End;
+     If (ArraySize > 1) And (Cont = (ArraySize - 2)) Then
+      urlContext := vTempData;
      Delete(NewCmd, 1, IBar2);
     End;
   End;
@@ -96,7 +106,7 @@ Begin
 End;
 
 Class Function TServerUtils.ParseWebFormsParams(Params: TStrings;
-  const URL: String; Var UrlMethod: String;vEncoding: TEncodeSelect;
+  const URL, Query: String; Var UrlMethod, urlContext: String;vEncoding: TEncodeSelect;
   MethodType : String = 'POST'): TDWParams;
 Var
   I: Integer;
@@ -121,8 +131,22 @@ Begin
     Cmd := URL + '/';
     I := Pos('/', Cmd);
     Delete(Cmd, 1, I);
-    I := Pos('/', Cmd);
-    UrlMethod := Copy(Cmd, 1, I - 1);
+    UrlMethod := '';
+    urlContext := '';
+    While Pos('/', Cmd) > 0 Do
+     Begin
+      I := Pos('/', Cmd);
+      If urlContext = '' Then
+       urlContext := Copy(Cmd, 1, I - 1)
+      Else If UrlMethod = '' Then
+       UrlMethod := Copy(Cmd, 1, I - 1);
+      Delete(Cmd, 1, I);
+     End;
+    If UrlMethod = '' Then
+     Begin
+      UrlMethod  := urlContext;
+      urlContext := '';
+     End;
    End;
   // Extrai Parametros
   If (Params.Count > 0) And (MethodType = 'POST') Then
@@ -153,8 +177,10 @@ Begin
     {$IFNDEF FPC}{$if CompilerVersion > 21}vParams.StrictDelimiter := true;{$IFEND}{$ENDIF}
     If pos(UrlMethod + '/', Cmd) > 0 Then
      Cmd := StringReplace(UrlMethod + '/', Cmd, '', [rfReplaceAll]);
-    If (Params.Count > 0) then
-     Cmd := Cmd + Params.Text;
+    If (Params.Count > 0) And (Pos('?', URL) = 0) then
+     Cmd := Cmd + Params.Text
+    Else
+     Cmd := Cmd + Query;
     Uri := TIdURI.Create(Cmd);
     Try
      vParams.DelimitedText := Uri.Params;
@@ -212,3 +238,4 @@ Begin
 End;
 
 end.
+

@@ -74,6 +74,7 @@ TYPE
     Label3: TLabel;
     eWelcomemessage: TEdit;
     Label9: TLabel;
+    DWClientEvents2: TDWClientEvents;
     RESTDWClientSQL1EMP_NO: TSmallintField;
     RESTDWClientSQL1FIRST_NAME: TStringField;
     RESTDWClientSQL1LAST_NAME: TStringField;
@@ -145,7 +146,8 @@ BEGIN
     END;
   END;
   FIM := Now;
-  Showmessage(IntToStr(RESTDWClientSQL1.Recordcount) + ' registro(s) recebido(s) em ' + IntToStr(SecondsBetween(FIM, INICIO)) + ' segundos.');
+  If RESTDWClientSQL1.Active Then
+   Showmessage(IntToStr(RESTDWClientSQL1.Recordcount) + ' registro(s) recebido(s) em ' + IntToStr(SecondsBetween(FIM, INICIO)) + ' segundos.');
 END;
 
 PROCEDURE TForm2.Button2Click(Sender: TObject);

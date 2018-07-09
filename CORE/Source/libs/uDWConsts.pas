@@ -6,24 +6,25 @@ Interface
 
 Uses
     {$IFDEF FPC}
-     SysUtils, DB, Classes, IdGlobal, IdCoderMIME, uZlibLaz, base64, uDWConstsData;
+     SysUtils, DB, Classes, IdGlobal, IdCoderMIME, IdGlobalProtocols, IdMessageCoderMIME, uZlibLaz, base64, uDWConstsData;
     {$ELSE}
-     {$if CompilerVersion > 21} // Delphi 2010 pra cima
-      System.SysUtils, IdGlobal, uZlibLaz, System.NetEncoding, EncdDecd,
+     IdGlobal, IdCoderMIME, IdGlobalProtocols, IdMessageCoderMIME,
+     {$if CompilerVersion > 24} // Delphi 2010 pra cima
+      System.SysUtils, uZlibLaz, EncdDecd,
       {$IFDEF POSIX}
        Posix.Unistd,
       {$ENDIF}
-      Data.DB, System.Classes, IdCoderMIME, uDWConstsData;
+      Data.DB, System.Classes, uDWConstsData;
      {$ELSE}
-      SysUtils, IdGlobal, uZlibLaz, EncdDecd,
-      DB, Classes, IdCoderMIME, uDWConstsData;
+      SysUtils, uZlibLaz, EncdDecd,
+      DB, Classes, uDWConstsData;
      {$IFEND}
     {$ENDIF}
 
 
 Const
  {$IFNDEF FPC}
-  {$IF Defined(HAS_FMX)} //Alteardo para IOS Brito
+  {$IFDEF HAS_FMX} //Alteardo para IOS Brito
     {$IFDEF MACOS}       // Alteracao feito por ICO para MACOSX
      InitStrPos         = 1;
      FinalStrPos        = 0;
@@ -34,7 +35,7 @@ Const
   {$ELSE}
    InitStrPos            = 1;
    FinalStrPos           = 0;
-  {$IFEND}
+  {$ENDIF}
  {$ELSE}
  InitStrPos            = 1;
  FinalStrPos           = 0;
@@ -59,6 +60,10 @@ Const
  TReplyInvalidPooler   = '{"MESSAGE":"NOK", "RESULT":"Invalid Pooler Name..."}';
  TReplyInvalidWelcome  = '{"MESSAGE":"NOK", "RESULT":"Invalid welcomemessage..."}';
  TReplyError           = '{"MESSAGE":"NOK", "RESULT":"%s"}';
+ TServerStatusHTML     = '<!DOCTYPE html><html><head><meta charset="UTF-8"/>'       +
+                         '<title>REST Dataware - CORE</title></head><body>'         +
+                         '<h1>REST Dataware - CORE</h1>'                            +
+                         '<h2>Server Status - Online</h2></body></html>';
  AuthRealm             = 'Provide Authentication';
  UrlBase               = '%s://%s:%d/%s';
  ByteBuffer            = 1024 * 8; //8kb
@@ -78,8 +83,9 @@ Const
                         'Components REST DataWare Core' + #13#10 +
                         'CORE Version';
  DWSobreLicencaStatus = 'Open Source - Free Version';
- DWRelease            = '1459';
- DWVERSAO             = '1.3.1.' + DWRelease;
+ DWRelease            = '1509';
+ DWCodeProject        = 'Zillion';
+ DWVERSAO             = '1.4.0.' + DWRelease + '(' + DWCodeProject + ')';
 
 Type
  TResquestType    = (rtGet, rtPost, rtPut, rtPatch, rtDelete);
@@ -100,11 +106,18 @@ Type
                      ovTimeStampOffset, ovObject,       ovSingle);                                                           //49..51
  TDatasetType     = (dtReflection,      dtFull,         dtDiff);
  {$IFNDEF FPC}
- {$if CompilerVersion > 21}
+ {$if CompilerVersion > 24}
  Function  GetEncoding              (Avalue          : TEncodeSelect)             : TEncoding;       Overload;
  {$IFEND}
  {$ENDIF}
- Function  GetEncodingID            (Avalue          : TEncodeSelect)             : IIdTextEncoding; Overload;
+ Function  GetEncodingID            (Avalue          : TEncodeSelect)             : {$IFNDEF FPC}{$IF (CompilerVersion = 23) OR (CompilerVersion = 24)}
+                                                                                     TIdTextEncoding;
+                                                                                    {$ELSE}
+                                                                                     IIdTextEncoding;
+                                                                                    {$IFEND}
+                                                                                    {$ELSE}
+                                                                                     IIdTextEncoding;
+                                                                                    {$ENDIF} Overload;
  Function  GetObjectName            (TypeObject      : TTypeObject)               : String;          Overload;
  Function  GetJSONModeName          (TypeObject      : TJsonMode)                 : String;          Overload;
  Function  GetJSONModeName          (TypeObject      : String)                    : TJsonMode;       Overload;
@@ -139,7 +152,14 @@ Type
                                      Var Value       : TStringStream)             : Boolean;
  Function  ZCompressStr             (Const s         : String;
                                      Var Value       : String)                    : Boolean;
- Function  BytesArrToString         (aValue          : tIdBytes;         IdEncode : IIdTextEncoding = Nil) : String;
+ Function  BytesArrToString         (aValue          : tIdBytes;         IdEncode : {$IFNDEF FPC}{$IF (CompilerVersion = 23) OR (CompilerVersion = 24)}
+                                                                                     TIdTextEncoding
+                                                                                    {$ELSE}
+                                                                                     IIdTextEncoding
+                                                                                    {$IFEND}
+                                                                                    {$ELSE}
+                                                                                     IIdTextEncoding
+                                                                                    {$ENDIF} = Nil) : String;
  Function  ObjectValueToFieldType   (TypeObject      : TObjectValue)              : TFieldType;
  Function  FieldTypeToObjectValue   (FieldType       : TFieldType)                : TObjectValue;
  Function  DatasetStateToMassiveType(DatasetState    : TDatasetState)             : TMassiveMode;
@@ -151,7 +171,8 @@ Type
  Function  BuildFloatString         (Value           : String)                    : String;
  Function  BuildStringFloat         (Value              : String;
                                      JsonModeD          : TJsonMode = jmDataware;
-                                     FloatDecimalFormat : String = '')               : String;
+                                     FloatDecimalFormat : String = '')            : String;
+ Function  GetMIMEType              (sFile              : TFileName)              : string;
 
 Var
  DecimalLocal : Char;
@@ -160,6 +181,17 @@ implementation
 
 Uses uRESTDWPoolerDB, uDWJSONObject, uDWJSONTools;
 
+Function GetMIMEType(sFile: TFileName) : string;
+Var
+ aMIMEMap : TIdMIMETable;
+Begin
+ aMIMEMap:= TIdMIMETable.Create(true);
+ Try
+  Result:= aMIMEMap.GetFileMIMEType(sFile);
+ Finally
+  aMIMEMap.Free;
+ End;
+End;
 
 Function DateTimeToUnix(ConvDate: TDateTime): Int64;
 begin
@@ -236,7 +268,14 @@ Begin
  End;
 End;
 
-Function BytesArrToString(aValue : tIdBytes;IdEncode : IIdTextEncoding = Nil) : String;
+Function BytesArrToString(aValue : tIdBytes;IdEncode :  {$IFNDEF FPC}{$IF (CompilerVersion = 23) OR (CompilerVersion = 24)}
+                                                         TIdTextEncoding
+                                                        {$ELSE}
+                                                         IIdTextEncoding
+                                                        {$IFEND}
+                                                        {$ELSE}
+                                                         IIdTextEncoding
+                                                        {$ENDIF} = Nil) : String;
 Begin
  Result   := BytesToString(aValue, IdEncode);
 End;
@@ -1228,13 +1267,39 @@ End;
 {$IFEND}
 {$ENDIF}
 
-Function GetEncodingID(Avalue  : TEncodeSelect) : IIdTextEncoding;
+Function GetEncodingID(Avalue  : TEncodeSelect) :  {$IFNDEF FPC}{$IF (CompilerVersion = 23) OR (CompilerVersion = 24)}
+                                                    TIdTextEncoding
+                                                   {$ELSE}
+                                                    IIdTextEncoding
+                                                   {$IFEND}
+                                                   {$ELSE}
+                                                    IIdTextEncoding
+                                                   {$ENDIF};
 Begin
+{$IFNDEF FPC}{$IF (CompilerVersion = 23) OR (CompilerVersion = 24)}
+ Result := enDefault;
+{$ELSE}
  Result := IndyTextEncoding(encIndyDefault);
+{$IFEND}
+{$ENDIF}
  Case Avalue of
-  esUtf8  : Result := IndyTextEncoding(encUTF8);
+  esUtf8  : {$IFNDEF FPC}{$IF (CompilerVersion = 23) OR (CompilerVersion = 24)}
+             Result := enUTF8;
+            {$ELSE}
+             Result := IndyTextEncoding(encUTF8);
+            {$IFEND}
+            {$ELSE}
+             Result := IndyTextEncoding(encUTF8);
+            {$ENDIF}
   esANSI,
-  esASCII : Result := IndyTextEncoding(encASCII);
+  esASCII :  {$IFNDEF FPC}{$IF (CompilerVersion = 23) OR (CompilerVersion = 24)}
+             Result := en8Bit;
+            {$ELSE}
+             Result := IndyTextEncoding(encASCII);
+            {$IFEND}
+            {$ELSE}
+             Result := IndyTextEncoding(encASCII);
+            {$ENDIF}
  End;
 End;
 

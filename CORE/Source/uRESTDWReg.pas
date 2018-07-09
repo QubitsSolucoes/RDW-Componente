@@ -23,23 +23,30 @@ unit uRESTDWReg;
  Mizael Rocha               - Member Tester and DEMO Developer.
  Flávio Motta               - Member Tester and DEMO Developer.
  Itamar Gaucho              - Member Tester and DEMO Developer.
+ Ico Menezes                - Member Tester and DEMO Developer.
 }
+
 
 interface
 
 uses
   {$IFDEF FPC}
     StdCtrls, ComCtrls, Forms, ExtCtrls, DBCtrls, DBGrids, Dialogs, Controls, Variants, TypInfo, FileCtrl,
-    LResources, SysUtils, FormEditingIntf, PropEdits, lazideintf, ComponentEditors, Classes, uDWResponseTranslator, uRESTDWBase, uRESTDWPoolerDB, uDWDatamodule, uDWMassiveBuffer, uRESTDWServerEvents, uDWDataset;
+    LResources, SysUtils, FormEditingIntf, PropEdits, lazideintf, ComponentEditors, Classes, uDWResponseTranslator,
+    uRESTDWBase, uRESTDWPoolerDB, uDWDatamodule, uDWMassiveBuffer, uRESTDWServerEvents, uDWDataset, uRESTDWServerContext;
   {$ELSE}
-   Windows, SysUtils, StdCtrls, ComCtrls, Forms, ExtCtrls, DBCtrls, DBGrids, Dialogs, Controls,  Graphics, FileCtrl, Variants, StrEdit, TypInfo, RTLConsts, uDWDataset,
+   Windows, SysUtils, Variants, StrEdit, TypInfo, RTLConsts, uDWDataset,
    {$IFDEF COMPILER16_UP}
    UITypes,
    {$ENDIF}
    {$if CompilerVersion > 21}
-    ToolsApi, DMForm, DesignWindows, DesignEditors, DBReg, DesignIntf, ExptIntf, Classes, uDWResponseTranslator, uRESTDWBase, uRESTDWPoolerDB, uDWDatamodule, uDWMassiveBuffer, uRESTDWServerEvents, Db, DSDesign, ColnEdit;
+    ToolsApi, vcl.Graphics, DMForm, DesignWindows, DesignEditors, DBReg, DSDesign,
+    DesignIntf, ExptIntf, Classes, uDWResponseTranslator, uRESTDWBase, uRESTDWPoolerDB,
+    uDWDatamodule, uDWMassiveBuffer, uRESTDWServerEvents, uRESTDWServerContext, Db, ColnEdit;
    {$ELSE}
-    ToolsApi, DMForm, DesignWindows, DesignEditors, DBReg, DesignIntf, ExptIntf, Classes, uDWResponseTranslator, uRESTDWBase, uRESTDWPoolerDB, uDWDatamodule, uDWMassiveBuffer, uRESTDWServerEvents, Db, DbTables, DSDesign, ColnEdit;
+    ToolsApi, Graphics, DMForm, DesignWindows, DesignEditors, DBReg, DesignIntf,
+    ExptIntf, Classes, uDWResponseTranslator, uRESTDWBase, uRESTDWPoolerDB,
+    uDWDatamodule, uDWMassiveBuffer, uRESTDWServerEvents, uRESTDWServerContext, Db, DbTables, DSDesign, ColnEdit;
    {$IFEND}
   {$ENDIF}
 
@@ -65,6 +72,14 @@ Type
 
 Type
  TPoolersList = Class(TStringProperty)
+ Public
+  Function  GetAttributes  : TPropertyAttributes; Override;
+  Procedure GetValues(Proc : TGetStrProc);        Override;
+  Procedure Edit;                                 Override;
+End;
+
+Type
+ TServerEventsList = Class(TStringProperty)
  Public
   Function  GetAttributes  : TPropertyAttributes; Override;
   Procedure GetValues(Proc : TGetStrProc);        Override;
@@ -123,10 +138,10 @@ Procedure Register;
 
 Implementation
 
-uses uDWConsts, uDWConstsData, uDWAbout;
+uses uDWConsts, uDWConstsData, uDWPoolerMethod, uDWAbout;
 
 {$IFNDEF FPC}
-{$IFDEF  RTL170_UP}
+{$IFDEF  RTL240_UP}
 Var
  AboutBoxServices : IOTAAboutBoxServices = nil;
  AboutBoxIndex    : Integer = 0;
@@ -328,7 +343,8 @@ Begin
  {$ELSE}
   FormEditingHook.RegisterDesignerBaseClass(TServerMethodDataModule);
  {$ENDIF}
- RegisterComponents('REST Dataware - Service',     [TRESTServicePooler, TRESTDWServiceNotification, TDWServerEvents,   TRESTServiceCGI,  TDWClientEvents, TRESTClientPooler]);
+ RegisterComponents('REST Dataware - Service',     [TRESTServicePooler, TRESTDWServiceNotification, TDWServerContext, TDWServerEvents,
+                                                    TRESTServiceCGI,    TDWClientEvents, TRESTClientPooler]);
  RegisterComponents('REST Dataware - Tools',       [TDWClientREST,      TDWResponseTranslator]);
  RegisterComponents('REST Dataware - CORE - DB',   [TRESTDWPoolerDB,    TRESTDWDataBase,   TRESTDWClientSQL, TDWMemtable,     TDWMassiveSQLCache,
                                                     TRESTDWStoredProc,  TRESTDWPoolerList, TDWMassiveCache]);
@@ -339,7 +355,8 @@ Begin
   RegisterPropertyEditor(TypeInfo(TDWAboutInfo),   Nil, 'AboutInfo', TDWAboutDialogProperty);
   RegisterPropertyEditor(TypeInfo(TDWAboutInfoDS), Nil, 'AboutInfo', TDWAboutDialogProperty);
  {$ENDIF}
- RegisterPropertyEditor(TypeInfo(String),       TRESTDWDataBase,  'PoolerName',   TPoolersList);
+ RegisterPropertyEditor(TypeInfo(String),       TRESTDWDataBase,  'PoolerName',      TPoolersList);
+ RegisterPropertyEditor(TypeInfo(String),       TDWClientEvents,  'ServerEventName', TServerEventsList);
  RegisterComponentEditor(TDWServerEvents,       TDWServerEventsEditor);
  RegisterComponentEditor(TDWClientEvents,       TDWClientEventsEditor);
  RegisterComponentEditor(TDWResponseTranslator, TDWResponseTranslatorEditor);
@@ -440,9 +457,87 @@ Begin
  Result := 2;
 End;
 
+{ TServerEventsList }
+
+procedure TServerEventsList.Edit;
+Var
+ vTempData : String;
+Begin
+ Inherited Edit;
+ Try
+  vTempData := GetValue;
+  SetValue(vTempData);
+ Finally
+ End;
+End;
+
+Function TServerEventsList.GetAttributes: TPropertyAttributes;
+begin
+  // editor, sorted list, multiple selection
+ Result := [paValueList, paSortList];
+end;
+
+procedure TServerEventsList.GetValues(Proc: TGetStrProc);
+Var
+ vLista : TStringList;
+ I      : Integer;
+ Function GetRestPoolers : TStringList;
+ Var
+  vTempList     : TStringList;
+  vConnection   : TDWPoolerMethodClient;
+  I             : Integer;
+  vRESTClientPooler : TRESTClientPooler;
+ Begin
+  If TDWClientEvents(GetComponent(0)).RESTClientPooler <> Nil Then
+   Begin
+    vRESTClientPooler          := TDWClientEvents(GetComponent(0)).RESTClientPooler;
+    vConnection                := TDWPoolerMethodClient.Create(Nil);
+    vConnection.WelcomeMessage := vRESTClientPooler.WelcomeMessage;
+    vConnection.Host           := vRESTClientPooler.Host;
+    vConnection.Port           := vRESTClientPooler.Port;
+    vConnection.Compression    := vRESTClientPooler.DataCompression;
+    vConnection.TypeRequest    := vRESTClientPooler.TypeRequest;
+    vConnection.AccessTag      := vRESTClientPooler.AccessTag;
+    Result := TStringList.Create;
+    Try
+     vTempList := vConnection.GetServerEvents(vRESTClientPooler.UrlPath,
+                                              vRESTClientPooler.RequestTimeOut,
+                                              vRESTClientPooler.UserName,
+                                              vRESTClientPooler.Password);
+     Try
+      For I := 0 To vTempList.Count -1 do
+       Result.Add(vTempList[I]);
+     Finally
+      If Assigned(vTempList) Then
+       vTempList.Free;
+     End;
+    Except
+     On E : Exception do
+      Begin
+       Raise Exception.Create(E.Message);
+      End;
+    End;
+    FreeAndNil(vConnection);
+   End;
+ End;
+Begin
+ //Provide a list of Poolers
+ vLista := Nil;
+ With GetComponent(0) as TDWClientEvents Do
+  Begin
+   vLista := GetRestPoolers;
+   Try
+    For I := 0 To vLista.Count -1 Do
+     Proc (vLista[I]);
+   Except
+   End;
+   FreeAndNil(vLista);
+  End;
+End;
+
 initialization
  {$IFNDEF FPC}
- {$IFDEF  RTL170_UP}
+ {$IFDEF  RTL240_UP}
 	RegisterAboutBox;
   AddSplash;
  {$ENDIF}
@@ -458,7 +553,7 @@ initialization
 
 Finalization
  {$IFNDEF FPC}
- {$IFDEF  RTL170_UP}
+ {$IFDEF  RTL240_UP}
 	UnregisterAboutBox;
  {$ENDIF}
  {$ENDIF}

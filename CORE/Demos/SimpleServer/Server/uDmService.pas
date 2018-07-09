@@ -37,9 +37,9 @@ USES
   FireDAC.Phys.MSSQLDef,
   FireDAC.Phys.ODBCBase,
   FireDAC.Phys.MSSQL,
-  uDWConsts, uRESTDWServerEvents, FireDAC.Stan.Param, FireDAC.DatS,
+  uDWConsts, uRESTDWServerEvents, uSystemEvents, FireDAC.Stan.Param, FireDAC.DatS,
   FireDAC.DApt.Intf, FireDAC.Comp.DataSet, uDWAbout, FireDAC.Phys.MySQLDef,
-  FireDAC.Phys.MySQL;
+  FireDAC.Phys.MySQL, uRESTDWServerContext;
 
 Const
  WelcomeSample = False;
@@ -56,6 +56,8 @@ TYPE
     FDTransaction1: TFDTransaction;
     FDQuery1: TFDQuery;
     FDPhysMySQLDriverLink1: TFDPhysMySQLDriverLink;
+    DWServerEvents2: TDWServerEvents;
+    DWServerContext1: TDWServerContext;
     PROCEDURE ServerMethodDataModuleCreate(Sender: TObject);
     PROCEDURE Server_FDConnectionBeforeConnect(Sender: TObject);
     PROCEDURE Server_FDConnectionError(ASender, AInitiator: TObject; VAR AException: Exception);
@@ -63,23 +65,36 @@ TYPE
       var MassiveDataset: TMassiveDatasetBuffer; var Ignore: Boolean);
     procedure DWServerEvents1EventsservertimeReplyEvent(var Params: TDWParams;
       var Result: string);
-    procedure DWServerEvents1EventstesteReplyEvent(var Params: TDWParams;
-      var Result: string);
     procedure DWServerEvents1EventsloaddataseteventReplyEvent(
       var Params: TDWParams; var Result: string);
     procedure DWServerEvents1EventsgetemployeeReplyEvent(var Params: TDWParams;
       var Result: string);
-    procedure ServerMethodDataModuleWelcomeMessage(Welcomemsg,
-      AccessTag: string; var Accept: Boolean);
     procedure DWServerEvents1EventsgetemployeeDWReplyEvent(
       var Params: TDWParams; var Result: string);
     procedure DWServerEvents1EventseventintReplyEvent(var Params: TDWParams;
       var Result: string);
     procedure DWServerEvents1EventseventdatetimeReplyEvent(
       var Params: TDWParams; var Result: string);
+    procedure DWServerEvents1EventshelloworldReplyEvent(var Params: TDWParams;
+      var Result: string);
+    procedure DWServerEvents2Eventshelloworld2ReplyEvent(var Params: TDWParams;
+      var Result: string);
+    procedure ServerMethodDataModuleWelcomeMessage(Welcomemsg,
+      AccessTag: string; var ConnectionDefs: TConnectionDefs;
+      var Accept: Boolean);
+    procedure RESTDWDriverFD1PrepareConnection(
+      var ConnectionDefs: TConnectionDefs);
+    procedure DWServerContext1ContextListindexReplyRequest(
+      const Params: TDWParams; var ContentType, Result: string);
+    procedure DWServerContext1ContextListinitReplyRequest(
+      const Params: TDWParams; var ContentType, Result: string);
+    procedure DWServerContext1ContextListopenfileReplyRequestStream(
+      const Params: TDWParams; var ContentType: string;
+      var Result: TMemoryStream);
   PRIVATE
     { Private declarations }
     vIDVenda : Integer;
+    vConnectFromClient : Boolean;
     function GetGenID(GenName: String): Integer;
     procedure employeeReplyEvent(var Params: TDWParams; dJsonMode: TJsonMode; Var Result : String);
   PUBLIC
@@ -92,6 +107,8 @@ VAR
 IMPLEMENTATION
 
 {%CLASSGROUP 'Vcl.Controls.TControl'}
+
+uses uDWJSONTools;
 {$R *.dfm}
 
 
@@ -124,6 +141,90 @@ begin
  End;
 end;
 
+procedure TServerMethodDM.DWServerContext1ContextListindexReplyRequest(
+  const Params: TDWParams; var ContentType, Result: string);
+var
+ s : TStringlist;
+begin
+ s := TStringlist.Create;
+ Try
+  s.LoadFromFile('.\www\index.html');
+  Result := s.Text;
+ Finally
+  s.Free;
+ End;
+end;
+
+procedure TServerMethodDM.DWServerContext1ContextListinitReplyRequest(
+  const Params: TDWParams; var ContentType, Result: string);
+begin
+ Result := '<!DOCTYPE html> ' +
+           '<html>' +
+           '  <head>' +
+           '    <meta charset="utf-8">' +
+           '    <title>My test page</title>' +
+           '    <link href=''http://fonts.googleapis.com/css?family=Open+Sans'' rel=''stylesheet'' type=''text/css''>' +
+           '  </head>' +
+           '  <body>' +
+           '    <h1>REST Dataware is cool</h1>' +
+           '    <img src="http://www.resteasyobjects.com.br/myimages/LogoDW.png" alt="The REST Dataware logo: Powerfull Web Service.">' +
+           '  ' +
+           '  ' +
+           '    <p>working together to keep the Internet alive and accessible, help us to help you. Be free.</p>' +
+           ' ' +
+           '    <p><a href="http://www.restdw.com.br/">REST Dataware site</a> to learn and help us.</p>' +
+           '  </body>' +
+           '</html>';
+end;
+
+procedure TServerMethodDM.DWServerContext1ContextListopenfileReplyRequestStream(
+  const Params: TDWParams; var ContentType: string; var Result: TMemoryStream);
+Var
+ vNotFound   : Boolean;
+ vFileName   : String;
+ vStringStream : TStringStream;
+begin
+ vNotFound := True;
+ Result    := TMemoryStream.Create;
+ If Params.ItemsString['filename'] <> Nil Then
+  Begin
+   vFileName := '.\www\' + DecodeStrings(Params.ItemsString['filename'].AsString);
+   vNotFound := Not FileExists(vFileName);
+   If Not vNotFound Then
+    Begin
+     Try
+      Result.LoadFromFile(vFileName);
+      ContentType := GetMIMEType(vFileName);
+     Finally
+     End;
+    End;
+  End;
+ If vNotFound Then
+  Begin
+   vStringStream := TStringStream.Create('<!DOCTYPE html> ' +
+                                         '<html>' +
+                                         '  <head>' +
+                                         '    <meta charset="utf-8">' +
+                                         '    <title>My test page</title>' +
+                                         '    <link href=''http://fonts.googleapis.com/css?family=Open+Sans'' rel=''stylesheet'' type=''text/css''>' +
+                                         '  </head>' +
+                                         '  <body>' +
+                                         '    <h1>REST Dataware</h1>' +
+                                         '    <img src="http://www.resteasyobjects.com.br/myimages/LogoDW.png" alt="The REST Dataware logo: Powerfull Web Service.">' +
+                                         '  ' +
+                                         '  ' +
+                                         '    <p>File not Found.</p>' +
+                                         '  </body>' +
+                                         '</html>');
+   Try
+    vStringStream.Position := 0;
+    Result.CopyFrom(vStringStream, vStringStream.Size);
+   Finally
+    vStringStream.Free;
+   End;
+  End;
+end;
+
 procedure TServerMethodDM.DWServerEvents1EventseventdatetimeReplyEvent(
   var Params: TDWParams; var Result: string);
 begin
@@ -147,6 +248,12 @@ procedure TServerMethodDM.DWServerEvents1EventsgetemployeeReplyEvent(
 Begin
  employeeReplyEvent(Params, Params.JsonMode, Result);
 End;
+
+procedure TServerMethodDM.DWServerEvents1EventshelloworldReplyEvent(
+  var Params: TDWParams; var Result: string);
+begin
+ Result := 'Sou eu ServerEvent1';
+end;
 
 procedure TServerMethodDM.DWServerEvents1EventsloaddataseteventReplyEvent(
   var Params: TDWParams; var Result: string);
@@ -184,14 +291,15 @@ begin
  Params.ItemsString['resultstring'].AsString := 'testservice';
 end;
 
-procedure TServerMethodDM.DWServerEvents1EventstesteReplyEvent(
+procedure TServerMethodDM.DWServerEvents2Eventshelloworld2ReplyEvent(
   var Params: TDWParams; var Result: string);
 begin
- Params.ItemsString['result'].Asstring := 'hello World';
+ Result := 'Sou eu ServerEvent2';
 end;
 
 PROCEDURE TServerMethodDM.ServerMethodDataModuleCreate(Sender: TObject);
 BEGIN
+ vConnectFromClient := False;
   RESTDWPoolerDB1.Active := RestDWForm.CbPoolerState.Checked;
 END;
 
@@ -211,6 +319,17 @@ Begin
  End;
  vTempClient.Free;
 End;
+
+procedure TServerMethodDM.RESTDWDriverFD1PrepareConnection(
+  var ConnectionDefs: TConnectionDefs);
+begin
+ vConnectFromClient := True;
+ ConnectionDefs.DatabaseName := IncludeTrailingPathDelimiter(RestDWForm.EdPasta.Text) + ConnectionDefs.DatabaseName;
+ ConnectionDefs.HostName     := 'localhost';
+ ConnectionDefs.dbPort       := 3050;
+ ConnectionDefs.Username     := 'sysdba';
+ ConnectionDefs.Password     := 'masterkey';
+end;
 
 procedure TServerMethodDM.ServerMethodDataModuleMassiveProcess(
   var MassiveDataset: TMassiveDatasetBuffer; var Ignore: Boolean);
@@ -247,7 +366,9 @@ begin
 end;
 
 procedure TServerMethodDM.ServerMethodDataModuleWelcomeMessage(Welcomemsg,
-  AccessTag: string; var Accept: Boolean);
+                                                               AccessTag          : String;
+                                                               Var ConnectionDefs : TConnectionDefs;
+                                                               Var Accept         : Boolean);
 Var
  vUserNameWM,
  vPasswordWM : String;
@@ -293,47 +414,38 @@ VAR
   Usuario_BD: STRING;
   Senha_BD: STRING;
 BEGIN
- database:= RestDWForm.EdBD.Text;
-
-  Driver_BD := RestDWForm.CbDriver.Text;
-  If RestDWForm.CkUsaURL.Checked Then
+ If Not vConnectFromClient Then
   Begin
-    Servidor_BD := RestDWForm.EdURL.Text;
-  end
-  Else
-  Begin
+   database:= RestDWForm.EdBD.Text;
+   Driver_BD := RestDWForm.CbDriver.Text;
+   If RestDWForm.CkUsaURL.Checked Then
+    Servidor_BD := RestDWForm.EdURL.Text
+   Else
     Servidor_BD := RestDWForm.DatabaseIP;
-  end;
-
-  Case RestDWForm.CbDriver.ItemIndex Of
-    0: // FireBird
-      Begin
-        Pasta_BD := IncludeTrailingPathDelimiter(RestDWForm.EdPasta.Text);
-        Database := RestDWForm.edBD.Text;
-        Database := Pasta_BD + Database;
-      end;
-    1: // MSSQL
-      Begin
-        Database := RestDWForm.EdBD.Text;
-      end;
-  end;
-
-  Porta_BD   := RestDWForm.EdPortaBD.Text;
-  Usuario_BD := RestDWForm.EdUserNameBD.Text;
-  Senha_BD   := RestDWForm.EdPasswordBD.Text;
-
-  TFDConnection(Sender).Params.Clear;
-  TFDConnection(Sender).Params.Add('DriverID=' + Driver_BD);
-  TFDConnection(Sender).Params.Add('Server=' + Servidor_BD);
-  TFDConnection(Sender).Params.Add('Port=' + Porta_BD);
-  TFDConnection(Sender).Params.Add('Database=' + Database);
-  TFDConnection(Sender).Params.Add('User_Name=' + Usuario_BD);
-  TFDConnection(Sender).Params.Add('Password=' + Senha_BD);
-  TFDConnection(Sender).Params.Add('Protocol=TCPIP');
-  TFDConnection(Sender).DriverName  := Driver_BD;
-  TFDConnection(Sender).LoginPrompt := FALSE;
-  TFDConnection(Sender).UpdateOptions.CountUpdatedRecords := False;
-END;
+   Case RestDWForm.CbDriver.ItemIndex Of
+    0 : Begin
+         Pasta_BD := IncludeTrailingPathDelimiter(RestDWForm.EdPasta.Text);
+         Database := RestDWForm.edBD.Text;
+         Database := Pasta_BD + Database;
+        End;
+    1 : Database := RestDWForm.EdBD.Text;
+   End;
+   Porta_BD   := RestDWForm.EdPortaBD.Text;
+   Usuario_BD := RestDWForm.EdUserNameBD.Text;
+   Senha_BD   := RestDWForm.EdPasswordBD.Text;
+   TFDConnection(Sender).Params.Clear;
+   TFDConnection(Sender).Params.Add('DriverID=' + Driver_BD);
+   TFDConnection(Sender).Params.Add('Server=' + Servidor_BD);
+   TFDConnection(Sender).Params.Add('Port=' + Porta_BD);
+   TFDConnection(Sender).Params.Add('Database=' + Database);
+   TFDConnection(Sender).Params.Add('User_Name=' + Usuario_BD);
+   TFDConnection(Sender).Params.Add('Password=' + Senha_BD);
+   TFDConnection(Sender).Params.Add('Protocol=TCPIP');
+   TFDConnection(Sender).DriverName  := Driver_BD;
+   TFDConnection(Sender).LoginPrompt := FALSE;
+   TFDConnection(Sender).UpdateOptions.CountUpdatedRecords := False;
+  End;
+End;
 
 PROCEDURE TServerMethodDM.Server_FDConnectionError(ASender, AInitiator: TObject; VAR AException: Exception);
 BEGIN

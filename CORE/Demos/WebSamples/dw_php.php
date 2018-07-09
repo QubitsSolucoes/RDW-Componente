@@ -56,7 +56,7 @@
                         }
                     }
 */
-                    $url = "http://testserver:testserver@localhost:8082/getemployee"; //<!-- &dwwelcomemessage=&accesstag=cmVzdGR3";-->
+                    $url = "http://testserver:testserver@localhost:8082/se1/getemployee"; //<!-- &dwwelcomemessage=&accesstag=cmVzdGR3";-->
                     $json = file_get_contents($url);
                     if ($json) {
                         $json_output = json_decode($json);

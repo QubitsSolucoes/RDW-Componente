@@ -20,7 +20,7 @@
 		var carregapessoas = function(){
 			$http({
 				method: "GET",
-				url: "http://testserver:testserver@localhost:8082/getemployee"
+				url: "http://testserver:testserver@localhost:8082/se1/getemployee"
 			}).then(function (success){
 				$scope.employees = success.data; //.pessoa;
 			}, function (error){

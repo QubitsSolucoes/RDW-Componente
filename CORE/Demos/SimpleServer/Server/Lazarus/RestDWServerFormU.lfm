@@ -1,5 +1,5 @@
 object RestDWForm: TRestDWForm
-  Left = 489
+  Left = 491
   Height = 385
   Top = 194
   Width = 520
@@ -4434,6 +4434,7 @@ object RestDWForm: TRestDWForm
     ServerContext = 'restdataware'
     SSLVerifyMode = []
     SSLVerifyDepth = 0
+    ForceWelcomeAccess = False
     left = 144
     top = 168
   end

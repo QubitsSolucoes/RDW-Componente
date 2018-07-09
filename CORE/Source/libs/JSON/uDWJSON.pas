@@ -458,7 +458,7 @@ begin
  result := f;
  result.DecimalSeparator := '.';
  result.ThousandSeparator := ',';
- result.CurrencyDecimals := 2;
+// result.CurrencyDecimals := 2;
 end;
 
 
@@ -855,15 +855,26 @@ begin
                       end;
                     end;
                 end else begin
-                    try
-                        result := _Integer.create(_Integer.parseInt(s,
+                          If Not((Pos(',', s) > 0) or (Pos('.', s) > 0)) Then
+                           Begin
+                            try
+                                result := _Integer.create(_Integer.parseInt(s,
                                                             8));
-                        exit;
-                    Except
-                      on e:Exception do begin
-                        ///* Ignore the error */
-                      end;
-                    end;
+                                exit;
+                            Except
+                                    on e:Exception do begin
+                                      ///* Ignore the error */
+                                    end;
+                            end;
+                           End;
+                          try
+                              result := _Double.create(s);
+                              exit;
+                          Except
+                                  on e:Exception do begin
+                                    ///* Ignore the error */
+                                  end;
+                          end;
                 end;
             end;
             If Not((Pos(',', s) > 0) or (Pos('.', s) > 0)) Then
@@ -2172,7 +2183,7 @@ end;
 
 function _Double.toString: string;
 begin
-  result := '"'+StringReplace(formatFloat('######0.00',fvalue),',','.',[rfReplaceAll])+'"';
+  result := '"'+StringReplace(FloatToStr(fvalue),',','.',[rfReplaceAll])+'"';
 end;
 
 { TJSONArray }

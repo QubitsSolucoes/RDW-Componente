@@ -21,6 +21,7 @@ object ServerMethodDM: TServerMethodDM
   end
   object RESTDWDriverFD1: TRESTDWDriverFD
     CommitRecords = 100
+    OnPrepareConnection = RESTDWDriverFD1PrepareConnection
     Connection = Server_FDConnection
     Left = 53
     Top = 59
@@ -100,19 +101,6 @@ object ServerMethodDM: TServerMethodDM
         JsonMode = jmDataware
         Name = 'servertime'
         OnReplyEvent = DWServerEvents1EventsservertimeReplyEvent
-      end
-      item
-        DWParams = <
-          item
-            TypeObject = toParam
-            ObjectDirection = odOUT
-            ObjectValue = ovString
-            ParamName = 'result'
-            Encoded = True
-          end>
-        JsonMode = jmDataware
-        Name = 'teste'
-        OnReplyEvent = DWServerEvents1EventstesteReplyEvent
       end
       item
         DWParams = <
@@ -206,7 +194,21 @@ object ServerMethodDM: TServerMethodDM
         JsonMode = jmDataware
         Name = 'eventdatetime'
         OnReplyEvent = DWServerEvents1EventseventdatetimeReplyEvent
+      end
+      item
+        DWParams = <
+          item
+            TypeObject = toParam
+            ObjectDirection = odOUT
+            ObjectValue = ovString
+            ParamName = 'result'
+            Encoded = False
+          end>
+        JsonMode = jmPureJSON
+        Name = 'helloworld'
+        OnReplyEvent = DWServerEvents1EventshelloworldReplyEvent
       end>
+    ContextName = 'SE1'
     Left = 80
     Top = 103
   end
@@ -220,5 +222,50 @@ object ServerMethodDM: TServerMethodDM
   object FDPhysMySQLDriverLink1: TFDPhysMySQLDriverLink
     Left = 165
     Top = 59
+  end
+  object DWServerEvents2: TDWServerEvents
+    IgnoreInvalidParams = False
+    Events = <
+      item
+        DWParams = <>
+        JsonMode = jmPureJSON
+        Name = 'helloworld'
+        OnReplyEvent = DWServerEvents2Eventshelloworld2ReplyEvent
+      end>
+    ContextName = 'SE2'
+    Left = 109
+    Top = 103
+  end
+  object DWServerContext1: TDWServerContext
+    IgnoreInvalidParams = False
+    ContextList = <
+      item
+        DWParams = <
+          item
+            TypeObject = toParam
+            ObjectDirection = odIN
+            ObjectValue = ovString
+            ParamName = 'entrada'
+            Encoded = True
+          end>
+        ContentType = 'text/html'
+        ContextName = 'init'
+        OnReplyRequest = DWServerContext1ContextListinitReplyRequest
+      end
+      item
+        DWParams = <>
+        ContentType = 'text/html'
+        ContextName = 'index'
+        OnReplyRequest = DWServerContext1ContextListindexReplyRequest
+      end
+      item
+        DWParams = <>
+        ContentType = 'text/html'
+        ContextName = 'openfile'
+        OnReplyRequestStream = DWServerContext1ContextListopenfileReplyRequestStream
+      end>
+    BaseContext = 'www'
+    Left = 184
+    Top = 104
   end
 end

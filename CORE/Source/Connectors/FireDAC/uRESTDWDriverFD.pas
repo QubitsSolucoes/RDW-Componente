@@ -10,7 +10,7 @@ uses System.SysUtils,          System.Classes,          Data.DBXJSON,
      FireDAC.Comp.DataSet,     FireDAC.DApt.Intf,       Data.DB,
      uDWConsts, uDWConstsData, uRestDWPoolerDB,         udwjson,
      uDWJSONInterface,         uDWJSONObject,           uDWMassiveBuffer,
-     Variants,                 uDWDatamodule,            SysTypes;
+     Variants,                 uDWDatamodule,           SysTypes, uSystemEvents;
 
 Type
  TRESTDWDriverFD   = Class(TRESTDWDriver)
@@ -55,6 +55,9 @@ Type
                                  Var Error        : Boolean;
                                  Var MessageError : String) : TJSONValue;Override;
   Procedure Close;Override;
+  Class Procedure CreateConnection(Const ConnectionDefs : TConnectionDefs;
+                                   Var   Connection     : TObject);        Override;
+  Procedure PrepareConnection     (Var   ConnectionDefs : TConnectionDefs);Override;
  Published
   Property Connection : TFDConnection Read GetConnection Write SetConnection;
 End;
@@ -561,6 +564,100 @@ Begin
   Inherited;
  If Connection <> Nil Then
   Connection.Close;
+End;
+
+Class Procedure TRESTDWDriverFD.CreateConnection(Const ConnectionDefs : TConnectionDefs;
+                                                 Var Connection       : TObject);
+ Procedure ServerParamValue(ParamName, Value : String);
+ Var
+  I, vIndex : Integer;
+  vFound : Boolean;
+ Begin
+  vFound := False;
+  vIndex := -1;
+  For I := 0 To TFDConnection(Connection).Params.Count -1 Do
+   Begin
+    If Lowercase(TFDConnection(Connection).Params.Names[I]) = Lowercase(ParamName) Then
+     Begin
+      vFound := True;
+      vIndex := I;
+      Break;
+     End;
+   End;
+  If Not (vFound) Then
+   TFDConnection(Connection).Params.Add(Format('%s=%s', [Lowercase(ParamName), Lowercase(Value)]))
+  Else
+   TFDConnection(Connection).Params[vIndex] := Format('%s=%s', [Lowercase(ParamName), Lowercase(Value)]);
+ End;
+Begin
+ Inherited;
+ If Assigned(ConnectionDefs) Then
+  Begin
+   Case ConnectionDefs.DriverType Of
+    dbtUndefined  : Begin
+
+                    End;
+    dbtAccess     : Begin
+                     TFDConnection(Connection).DriverName := 'MSAcc';
+
+                    End;
+    dbtDbase      : Begin
+
+                    End;
+    dbtFirebird   : Begin
+                     TFDConnection(Connection).DriverName := 'FB';
+                     ServerParamValue('Server',    ConnectionDefs.HostName);
+                     ServerParamValue('Port',      IntToStr(ConnectionDefs.dbPort));
+                     ServerParamValue('Database',  ConnectionDefs.DatabaseName);
+                     ServerParamValue('User_Name', ConnectionDefs.Username);
+                     ServerParamValue('Password',  ConnectionDefs.Password);
+                     ServerParamValue('Protocol',  Uppercase(ConnectionDefs.Protocol));
+                    End;
+    dbtInterbase  : Begin
+                     TFDConnection(Connection).DriverName := 'IB';
+                     ServerParamValue('Server',    ConnectionDefs.HostName);
+                     ServerParamValue('Port',      IntToStr(ConnectionDefs.dbPort));
+                     ServerParamValue('Database',  ConnectionDefs.DatabaseName);
+                     ServerParamValue('User_Name', ConnectionDefs.Username);
+                     ServerParamValue('Password',  ConnectionDefs.Password);
+                     ServerParamValue('Protocol',  Uppercase(ConnectionDefs.Protocol));
+                    End;
+    dbtMySQL      : Begin
+                     TFDConnection(Connection).DriverName := 'MYSQL';
+
+                    End;
+    dbtSQLLite    : Begin
+                     TFDConnection(Connection).DriverName := 'SQLLite';
+
+                    End;
+    dbtOracle     : Begin
+                     TFDConnection(Connection).DriverName := 'Ora';
+
+                    End;
+    dbtMsSQL      : Begin
+                     TFDConnection(Connection).DriverName := 'MSSQL';
+                     ServerParamValue('DriverID',  ConnectionDefs.DriverID);
+                     ServerParamValue('Server',    ConnectionDefs.HostName);
+                     ServerParamValue('Port',      IntToStr(ConnectionDefs.dbPort));
+                     ServerParamValue('Database',  ConnectionDefs.DatabaseName);
+                     ServerParamValue('User_Name', ConnectionDefs.Username);
+                     ServerParamValue('Password',  ConnectionDefs.Password);
+                     ServerParamValue('Protocol',  Uppercase(ConnectionDefs.Protocol));
+
+                    End;
+    dbtODBC       : Begin
+                     TFDConnection(Connection).DriverName := 'ODBC';
+                     ServerParamValue('DataSource', ConnectionDefs.DataSource);
+                    End;
+    dbtParadox    : Begin
+
+                    End;
+    dbtPostgreSQL : Begin
+                     TFDConnection(Connection).DriverName := 'PG';
+
+                    End;
+   End;
+  End;
 End;
 
 function TRESTDWDriverFD.ExecuteCommand(SQL              : String;
@@ -1842,6 +1939,106 @@ Begin
  vTempQuery.Free;
  If bJsonValue <> Nil Then
   FreeAndNil(bJsonValue);
+End;
+
+Procedure TRESTDWDriverFD.PrepareConnection(Var ConnectionDefs : TConnectionDefs);
+ Procedure ServerParamValue(ParamName, Value : String);
+ Var
+  I, vIndex : Integer;
+  vFound : Boolean;
+ Begin
+  vFound := False;
+  vIndex := -1;
+  For I := 0 To vFDConnection.Params.Count -1 Do
+   Begin
+    If Lowercase(vFDConnection.Params.Names[I]) = Lowercase(ParamName) Then
+     Begin
+      vFound := True;
+      vIndex := I;
+      Break;
+     End;
+   End;
+  If Not (vFound) Then
+   vFDConnection.Params.Add(Format('%s=%s', [ParamName, Value]))
+  Else
+   vFDConnection.Params[vIndex] := Format('%s=%s', [ParamName, Value]);
+ End;
+Begin
+ Inherited;
+ If Assigned(ConnectionDefs) Then
+  Begin
+   Case ConnectionDefs.DriverType Of
+    dbtUndefined  : Begin
+
+                    End;
+    dbtAccess     : Begin
+                     vFDConnection.DriverName := 'MSAcc';
+
+                    End;
+    dbtDbase      : Begin
+
+                    End;
+    dbtFirebird   : Begin
+                     vFDConnection.DriverName := 'FB';
+                     If Assigned(OnPrepareConnection) Then
+                      OnPrepareConnection(ConnectionDefs);
+                     ServerParamValue('Server',    ConnectionDefs.HostName);
+                     ServerParamValue('Port',      IntToStr(ConnectionDefs.dbPort));
+                     ServerParamValue('Database',  ConnectionDefs.DatabaseName);
+                     ServerParamValue('User_Name', ConnectionDefs.Username);
+                     ServerParamValue('Password',  ConnectionDefs.Password);
+                     ServerParamValue('Protocol',  Uppercase(ConnectionDefs.Protocol));
+                    End;
+    dbtInterbase  : Begin
+                     vFDConnection.DriverName := 'IB';
+                     If Assigned(OnPrepareConnection) Then
+                      OnPrepareConnection(ConnectionDefs);
+                     ServerParamValue('Server',    ConnectionDefs.HostName);
+                     ServerParamValue('Port',      IntToStr(ConnectionDefs.dbPort));
+                     ServerParamValue('Database',  ConnectionDefs.DatabaseName);
+                     ServerParamValue('User_Name', ConnectionDefs.Username);
+                     ServerParamValue('Password',  ConnectionDefs.Password);
+                     ServerParamValue('Protocol',  Uppercase(ConnectionDefs.Protocol));
+                    End;
+    dbtMySQL      : Begin
+                     vFDConnection.DriverName := 'MYSQL';
+
+                    End;
+    dbtSQLLite    : Begin
+                     vFDConnection.DriverName := 'SQLLite';
+
+                    End;
+    dbtOracle     : Begin
+                     vFDConnection.DriverName := 'Ora';
+
+                    End;
+    dbtMsSQL      : Begin
+                     vFDConnection.DriverName := 'MSSQL';
+                     If Assigned(OnPrepareConnection) Then
+                      OnPrepareConnection(ConnectionDefs);
+                     ServerParamValue('DriverID',  ConnectionDefs.DriverID);
+                     ServerParamValue('Server',    ConnectionDefs.HostName);
+                     ServerParamValue('Port',      IntToStr(ConnectionDefs.dbPort));
+                     ServerParamValue('Database',  ConnectionDefs.DatabaseName);
+                     ServerParamValue('User_Name', ConnectionDefs.Username);
+                     ServerParamValue('Password',  ConnectionDefs.Password);
+                     ServerParamValue('Protocol',  Uppercase(ConnectionDefs.Protocol));
+                    End;
+    dbtODBC       : Begin
+                     vFDConnection.DriverName := 'ODBC';
+                     If Assigned(OnPrepareConnection) Then
+                      OnPrepareConnection(ConnectionDefs);
+                     ServerParamValue('DataSource', ConnectionDefs.DataSource);
+                    End;
+    dbtParadox    : Begin
+
+                    End;
+    dbtPostgreSQL : Begin
+                     vFDConnection.DriverName := 'PG';
+
+                    End;
+   End;
+  End;
 End;
 
 Function TRESTDWDriverFD.InsertMySQLReturnID(SQL              : String;

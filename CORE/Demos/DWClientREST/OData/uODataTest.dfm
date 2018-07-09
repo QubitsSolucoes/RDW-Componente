@@ -52,6 +52,7 @@ object fODataTest: TfODataTest
     HandleRedirects = False
     VerifyCert = False
     AuthOptions.HasAuthentication = False
+    AccessControlAllowOrigin = '*'
     Left = 400
     Top = 112
   end
@@ -166,7 +167,7 @@ object fODataTest: TfODataTest
     AutoRefreshAfterCommit = False
     DWResponseTranslator = DWResponseTranslator1
     Left = 464
-    Top = 112
+    Top = 88
     object RESTDWClientSQL1UserName: TStringField
       FieldName = 'UserName'
     end

@@ -3,21 +3,30 @@ unit uDmService;
 interface
 
 uses
-  SysUtils, Classes, IBConnection, sqldb, uDWDatamodule,
-  uDWJSONObject, Dialogs, uDWConstsData,
-  uRESTDWPoolerDB, uRESTDWServerEvents, uRestDWLazDriver,  uConsts;
+  SysUtils, Classes, IBConnection, sqldb, mysql55conn, mysql50conn,
+  uDWDatamodule, uDWJSONObject, Dialogs, uDWConstsData, uRESTDWPoolerDB,
+  uRESTDWServerEvents, uRESTDWServerContext, uRestDWLazDriver, uConsts,
+  uDWConsts, uSystemEvents;
 
 type
 
   { TServerMethodDM }
 
   TServerMethodDM = class(TServerMethodDataModule)
+    DWServerContext1: TDWServerContext;
     DWServerEvents1: TDWServerEvents;
     FDQuery1: TSQLQuery;
     RESTDWLazDriver1: TRESTDWLazDriver;
     RESTDWPoolerDB1: TRESTDWPoolerDB;
     Server_FDConnection: TIBConnection;
     SQLTransaction1: TSQLTransaction;
+    procedure DWServerContext1ContextListindexReplyRequest(
+      const Params: TDWParams; Var ContentType, Result: String);
+    procedure DWServerContext1ContextListinitReplyRequest(
+      const Params: TDWParams; Var ContentType, Result: String);
+    procedure DWServerContext1ContextListopenfileReplyRequestStream(
+      const Params: TDWParams; Var ContentType: String;
+      Var Result: TMemoryStream);
     procedure DWServerEvents1EventsgetemployeeReplyEvent(Var Params: TDWParams;
       Var Result: String);
     procedure DWServerEvents1EventsservertimeReplyEvent(Var Params: TDWParams;
@@ -41,6 +50,8 @@ var
 implementation
 
 {%CLASSGROUP 'Vcl.Controls.TControl'}
+
+uses uDWJSONTools;
 
 {$R *.lfm}
 
@@ -116,8 +127,7 @@ begin
    JSONValue.Encoding        := Encoding;
    JSONValue.DatabaseCharSet := RESTDWLazDriver1.DatabaseCharSet;
    JSONValue.LoadFromDataset('employee', FDQuery1, False,  Params.JsonMode, '');
-   Params.ItemsString['result'].AsString := JSONValue.ToJSON;
-   Params.ItemsString['segundoparam'].AsString := 'teste de array';
+   Result := JSONValue.ToJSON;
   Except
   End;
  Finally
@@ -125,13 +135,94 @@ begin
  End;
 end;
 
+procedure TServerMethodDM.DWServerContext1ContextListindexReplyRequest(
+  const Params: TDWParams; Var ContentType, Result: String);
+var
+ s : TStringlist;
+begin
+ s := TStringlist.Create;
+ Try
+  s.LoadFromFile('.\www\index.html');
+  Result := s.Text;
+ Finally
+  s.Free;
+ End;
+end;
+
+procedure TServerMethodDM.DWServerContext1ContextListinitReplyRequest(
+  const Params: TDWParams; Var ContentType, Result: String);
+begin
+ Result := '<!DOCTYPE html> ' +
+           '<html>' +
+           '  <head>' +
+           '    <meta charset="utf-8">' +
+           '    <title>My test page</title>' +
+           '    <link href=''http://fonts.googleapis.com/css?family=Open+Sans'' rel=''stylesheet'' type=''text/css''>' +
+           '  </head>' +
+           '  <body>' +
+           '    <h1>REST Dataware is cool - Lazarus CGI</h1>' +
+           '    <img src="http://www.resteasyobjects.com.br/myimages/LogoDW.png" alt="The REST Dataware logo: Powerfull Web Service.">' +
+           '  ' +
+           '  ' +
+           '    <p>working together to keep the Internet alive and accessible, help us to help you. Be free.</p>' +
+           ' ' +
+           '    <p><a href="http://www.restdw.com.br/">REST Dataware site</a> to learn and help us.</p>' +
+           '  </body>' +
+           '</html>';
+end;
+
+procedure TServerMethodDM.DWServerContext1ContextListopenfileReplyRequestStream(
+  const Params: TDWParams; Var ContentType: String; Var Result: TMemoryStream);
+Var
+ vNotFound   : Boolean;
+ vFileName   : String;
+ vStringStream : TStringStream;
+begin
+ vNotFound := True;
+ Result    := TMemoryStream.Create;
+ If Params.ItemsString['filename'] <> Nil Then
+  Begin
+   vFileName := '.\www\' + DecodeStrings(Params.ItemsString['filename'].AsString, csUndefined);
+   vNotFound := Not FileExists(vFileName);
+   If Not vNotFound Then
+    Begin
+     Try
+      Result.LoadFromFile(vFileName);
+      ContentType := GetMIMEType(vFileName);
+     Finally
+     End;
+    End;
+  End;
+ If vNotFound Then
+  Begin
+   vStringStream := TStringStream.Create('<!DOCTYPE html> ' +
+                                         '<html>' +
+                                         '  <head>' +
+                                         '    <meta charset="utf-8">' +
+                                         '    <title>My test page</title>' +
+                                         '    <link href=''http://fonts.googleapis.com/css?family=Open+Sans'' rel=''stylesheet'' type=''text/css''>' +
+                                         '  </head>' +
+                                         '  <body>' +
+                                         '    <h1>REST Dataware</h1>' +
+                                         '    <img src="http://www.resteasyobjects.com.br/myimages/LogoDW.png" alt="The REST Dataware logo: Powerfull Web Service.">' +
+                                         '  ' +
+                                         '  ' +
+                                         Format('    <p>File "%s" not Found.</p>', [vFileName]) +
+                                         '  </body>' +
+                                         '</html>');
+   Try
+    vStringStream.Position := 0;
+    Result.CopyFrom(vStringStream, vStringStream.Size);
+   Finally
+    vStringStream.Free;
+   End;
+  End;
+end;
+
 procedure TServerMethodDM.DWServerEvents1EventstesteReplyEvent(
   Var Params: TDWParams; Var Result: String);
 begin
- If Params.ItemsString['echostring'].AsString = 'echo' Then
-  Params.ItemsString['result'].Asstring := 'Teste de echo, ÇÁ"\/'
- Else
-  Params.ItemsString['result'].Asstring := 'Hello World';
+ Result := 'Sou eu ServerEvents 1';
 end;
 
 procedure TServerMethodDM.Server_FDConnectionBeforeConnect(Sender: TObject);

@@ -4,7 +4,7 @@ object ServerMethodDM: TServerMethodDM
   Encoding = esUtf8
   OnReplyEvent = ServerMethodDataModuleReplyEvent
   Height = 251
-  HorizontalOffset = 508
+  HorizontalOffset = 510
   VerticalOffset = 207
   Width = 380
   PPI = 96
@@ -139,5 +139,31 @@ object ServerMethodDM: TServerMethodDM
     Database = Server_FDConnection
     left = 192
     top = 24
+  end
+  object DWServerContext1: TDWServerContext
+    IgnoreInvalidParams = False
+    ContextList = <    
+      item
+        DWParams = <        
+          item
+            TypeObject = toParam
+            ObjectDirection = odIN
+            ObjectValue = ovString
+            ParamName = 'entrada'
+            Encoded = True
+          end>
+        ContentType = 'text/html'
+        ContextName = 'init'
+        OnReplyRequest = DWServerContext1ContextListinitReplyRequest
+      end    
+      item
+        DWParams = <>
+        ContentType = 'text/html'
+        ContextName = 'index'
+        OnReplyRequest = DWServerContext1ContextListindexReplyRequest
+      end>
+    BaseContext = 'www'
+    left = 200
+    top = 176
   end
 end

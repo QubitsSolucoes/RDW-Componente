@@ -37,7 +37,7 @@ USES
   FireDAC.Phys.ODBCBase,
   FireDAC.Phys.MSSQL,
   uDWConsts, uRESTDWServerEvents, FireDAC.Stan.Param, FireDAC.DatS,
-  FireDAC.DApt.Intf, FireDAC.Comp.DataSet;
+  FireDAC.DApt.Intf, FireDAC.Comp.DataSet, uDWAbout, uRESTDWServerContext;
 
 TYPE
   TServerMethodDM = CLASS(TServerMethodDataModule)
@@ -50,7 +50,7 @@ TYPE
     FDPhysMSSQLDriverLink1: TFDPhysMSSQLDriverLink;
     FDTransaction1: TFDTransaction;
     FDQuery1: TFDQuery;
-    PROCEDURE ServerMethodDataModuleReplyEvent(SendType: TSendEvent; Context: STRING; VAR Params: TDWParams; VAR Result: STRING);
+    DWServerContext1: TDWServerContext;
     PROCEDURE ServerMethodDataModuleCreate(Sender: TObject);
     PROCEDURE Server_FDConnectionBeforeConnect(Sender: TObject);
     procedure ServerMethodDataModuleMassiveProcess(
@@ -63,6 +63,15 @@ TYPE
       var Params: TDWParams; var Result: string);
     procedure DWServerEvents1EventsgetemployeeReplyEvent(var Params: TDWParams;
       var Result: string);
+    procedure DWServerEvents1EventshelloworldReplyEvent(var Params: TDWParams;
+      var Result: string);
+    procedure DWServerContext1ContextListindexReplyRequest(
+      const Params: TDWParams; var ContentType, Result: string);
+    procedure DWServerContext1ContextListinitReplyRequest(
+      const Params: TDWParams; var ContentType, Result: string);
+    procedure DWServerContext1ContextListopenfileReplyRequestStream(
+      const Params: TDWParams; var ContentType: string;
+      var Result: TMemoryStream);
   PRIVATE
     { Private declarations }
     vIDVenda : Integer;
@@ -80,7 +89,7 @@ IMPLEMENTATION
 {%CLASSGROUP 'Vcl.Controls.TControl'}
 {$R *.dfm}
 
-uses uConsts;
+uses uConsts, uDWJSONTools;
 
 FUNCTION TServerMethodDM.ConsultaBanco(VAR Params: TDWParams): STRING;
 VAR
@@ -114,6 +123,90 @@ BEGIN
   END;
 END;
 
+procedure TServerMethodDM.DWServerContext1ContextListindexReplyRequest(
+  const Params: TDWParams; var ContentType, Result: string);
+var
+ s : TStringlist;
+begin
+ s := TStringlist.Create;
+ Try
+  s.LoadFromFile('.\www\index.html');
+  Result := s.Text;
+ Finally
+  s.Free;
+ End;
+end;
+
+procedure TServerMethodDM.DWServerContext1ContextListinitReplyRequest(
+  const Params: TDWParams; var ContentType, Result: string);
+begin
+ Result := '<!DOCTYPE html> ' +
+           '<html>' +
+           '  <head>' +
+           '    <meta charset="utf-8">' +
+           '    <title>My test page</title>' +
+           '    <link href=''http://fonts.googleapis.com/css?family=Open+Sans'' rel=''stylesheet'' type=''text/css''>' +
+           '  </head>' +
+           '  <body>' +
+           '    <h1>REST Dataware is cool</h1>' +
+           '    <img src="http://www.resteasyobjects.com.br/myimages/LogoDW.png" alt="The REST Dataware logo: Powerfull Web Service.">' +
+           '  ' +
+           '  ' +
+           '    <p>working together to keep the Internet alive and accessible, help us to help you. Be free.</p>' +
+           ' ' +
+           '    <p><a href="http://www.restdw.com.br/">REST Dataware site</a> to learn and help us.</p>' +
+           '  </body>' +
+           '</html>';
+end;
+
+procedure TServerMethodDM.DWServerContext1ContextListopenfileReplyRequestStream(
+  const Params: TDWParams; var ContentType: string; var Result: TMemoryStream);
+Var
+ vNotFound   : Boolean;
+ vFileName   : String;
+ vStringStream : TStringStream;
+begin
+ vNotFound := True;
+ Result    := TMemoryStream.Create;
+ If Params.ItemsString['filename'] <> Nil Then
+  Begin
+   vFileName := '.\www\' + DecodeStrings(Params.ItemsString['filename'].AsString);
+   vNotFound := Not FileExists(vFileName);
+   If Not vNotFound Then
+    Begin
+     Try
+      Result.LoadFromFile(vFileName);
+      ContentType := GetMIMEType(vFileName);
+     Finally
+     End;
+    End;
+  End;
+ If vNotFound Then
+  Begin
+   vStringStream := TStringStream.Create('<!DOCTYPE html> ' +
+                                         '<html>' +
+                                         '  <head>' +
+                                         '    <meta charset="utf-8">' +
+                                         '    <title>My test page</title>' +
+                                         '    <link href=''http://fonts.googleapis.com/css?family=Open+Sans'' rel=''stylesheet'' type=''text/css''>' +
+                                         '  </head>' +
+                                         '  <body>' +
+                                         '    <h1>REST Dataware</h1>' +
+                                         '    <img src="http://www.resteasyobjects.com.br/myimages/LogoDW.png" alt="The REST Dataware logo: Powerfull Web Service.">' +
+                                         '  ' +
+                                         '  ' +
+                                         '    <p>File not Found.</p>' +
+                                         '  </body>' +
+                                         '</html>');
+   Try
+    vStringStream.Position := 0;
+    Result.CopyFrom(vStringStream, vStringStream.Size);
+   Finally
+    vStringStream.Free;
+   End;
+  End;
+end;
+
 procedure TServerMethodDM.DWServerEvents1EventsgetemployeeReplyEvent(
   var Params: TDWParams; var Result: string);
 Var
@@ -129,14 +222,19 @@ begin
    JSONValue.JsonMode := Params.JsonMode;
    JSONValue.Encoding := Encoding;
    JSONValue.LoadFromDataset('employee', FDQuery1, False,  Params.JsonMode, '');
-   Params.ItemsString['result'].AsString := JSONValue.ToJSON;
-   Params.ItemsString['segundoparam'].AsString := 'teste de array';
+   Result := JSONValue.ToJSON;
   Except
 
   End;
  Finally
   JSONValue.Free;
  End;
+end;
+
+procedure TServerMethodDM.DWServerEvents1EventshelloworldReplyEvent(
+  var Params: TDWParams; var Result: string);
+begin
+ Result := 'Sou eu ServerEvent 1';
 end;
 
 procedure TServerMethodDM.DWServerEvents1EventsloaddataseteventReplyEvent(
@@ -236,27 +334,6 @@ begin
      MassiveDataset.Fields.FieldByName('ID_ITEMS').Value := IntToStr(GetGenID('GEN_' + lowercase(MassiveDataset.TableName)));
   End;
 end;
-
-PROCEDURE TServerMethodDM.ServerMethodDataModuleReplyEvent(SendType: TSendEvent; Context: STRING; VAR Params: TDWParams; VAR Result: STRING);
-VAR
-  JSONObject: TJSONObject;
-BEGIN
-  JSONObject := TJSONObject.Create;
-  CASE SendType OF
-    SePOST:
-      BEGIN
-        IF UpperCase(Context) = UpperCase('EMPLOYEE') THEN
-          Result := ConsultaBanco(Params)
-        ELSE
-        BEGIN
-          JSONObject.AddPair(TJSONPair.Create('STATUS', 'NOK'));
-          JSONObject.AddPair(TJSONPair.Create('MENSAGEM', 'Método não encontrado'));
-          Result := JSONObject.ToJSON;
-        END;
-      END;
-  END;
-  JSONObject.Free;
-END;
 
 PROCEDURE TServerMethodDM.Server_FDConnectionBeforeConnect(Sender: TObject);
 VAR

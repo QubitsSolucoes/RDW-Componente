@@ -763,7 +763,6 @@ object Form2: TForm2
     OnBeforeConnect = RESTDWDataBase1BeforeConnect
     Active = False
     Compression = True
-    MyIP = '0.0.0.0'
     Login = 'testserver'
     Password = 'testserver'
     Proxy = False
@@ -785,6 +784,7 @@ object Form2: TForm2
     OnStatus = RESTDWDataBase1Status
     DatabaseCharSet = csUndefined
     ParamCreate = True
+    ClientConnectionDefs.Active = False
     left = 136
     top = 56
   end
@@ -984,6 +984,7 @@ object Form2: TForm2
     top = 41
   end
   object DWClientEvents1: TDWClientEvents
+    ServerEventName = 'TServerMethodDM.DWServerEvents1'
     RESTClientPooler = RESTClientPooler1
     Events = <    
       item

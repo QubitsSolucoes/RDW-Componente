@@ -1412,10 +1412,6 @@ object RestDWForm: TRestDWForm
     object tsLogs: TTabSheet
       Caption = 'Logs'
       ImageIndex = 1
-      ExplicitLeft = 0
-      ExplicitTop = 0
-      ExplicitWidth = 0
-      ExplicitHeight = 0
       object Label19: TLabel
         Left = 7
         Top = 147
@@ -1490,6 +1486,7 @@ object RestDWForm: TRestDWForm
     OnLastResponse = RESTServicePooler1LastResponse
     Encoding = esUtf8
     ServerContext = 'restdataware'
+    RootPath = '/'
     SSLVerifyMode = []
     SSLVerifyDepth = 0
     ForceWelcomeAccess = False

@@ -5,7 +5,7 @@ interface
 uses SysUtils,  Classes,   DB, Uni, UniScript,    DBAccess,
      uDWConsts, uDWConstsData, uRestDWPoolerDB,   udwjson,
      uDWJSONObject,            uDWMassiveBuffer,  Variants,
-     uDWDatamodule,            SysTypes;
+     uDWDatamodule,            SysTypes,          uSystemEvents;
 
 Type
  TRESTDWDriverUNIDAC   = Class(TRESTDWDriver)
@@ -50,6 +50,9 @@ Type
                                  Var Error        : Boolean;
                                  Var MessageError : String) : TJSONValue;Override;
   Procedure Close;Override;
+  Class Procedure CreateConnection(Const ConnectionDefs : TConnectionDefs;
+                                   Var Connection       : TObject);      Override;
+  Procedure PrepareConnection     (Var ConnectionDefs : TConnectionDefs);Override;
  Published
   Property Connection : TUniConnection Read GetConnection Write SetConnection;
 End;
@@ -559,6 +562,13 @@ Begin
   Inherited;
  If Connection <> Nil Then
   Connection.Close;
+End;
+
+Class Procedure TRESTDWDriverUNIDAC.CreateConnection(Const ConnectionDefs : TConnectionDefs;
+                                                     Var   Connection     : TObject);
+Begin
+ Inherited;
+
 End;
 
 function TRESTDWDriverUNIDAC.ExecuteCommand(SQL              : String;
@@ -1865,6 +1875,12 @@ Begin
  vTempQuery.Free;
  If bJsonArray <> Nil Then
   FreeAndNil(bJsonArray);
+End;
+
+Procedure TRESTDWDriverUNIDAC.PrepareConnection(Var ConnectionDefs : TConnectionDefs);
+Begin
+ Inherited;
+
 End;
 
 Function TRESTDWDriverUNIDAC.InsertMySQLReturnID(SQL              : String;

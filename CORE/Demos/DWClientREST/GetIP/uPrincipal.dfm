@@ -76,6 +76,7 @@ object fClientREST: TfClientREST
     HandleRedirects = False
     VerifyCert = False
     AuthOptions.HasAuthentication = False
+    AccessControlAllowOrigin = '*'
     OnBeforeGet = DWClientREST1BeforeGet
     Left = 80
     Top = 96

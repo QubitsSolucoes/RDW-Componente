@@ -183,7 +183,7 @@ End;
   {$IFDEF FPC}
    Function  GetDataAnsiString(Index              : Integer) : AnsiString;
   {$ELSE}
-   {$IF CompilerVersion < 21}
+   {$IF CompilerVersion < 25}
     Function  GetDataAnsiString(Index              : Integer) : AnsiString;
    {$ELSE}
     Function  GetDataAnsiString(Index              : Integer) : String;
@@ -256,7 +256,7 @@ End;
   {$IFDEF FPC}
    Function  GetDefinitions  : AnsiString;
   {$ELSE}
-   {$IF CompilerVersion < 21}
+   {$IF CompilerVersion < 25}
     Function  GetDefinitions  : AnsiString;
    {$ELSE}
     Function  GetDefinitions  : String;
@@ -312,7 +312,7 @@ End;
   {$IFDEF FPC}
    Property DataString[Index      : Integer]   : AnsiString Read GetDataAnsiString;
   {$ELSE}
-   {$IF CompilerVersion < 21}
+   {$IF CompilerVersion < 25}
     Property DataString[Index      : Integer]   : AnsiString Read GetDataAnsiString;
    {$ELSE}
     Property DataString[Index      : Integer]   : String Read GetDataAnsiString;
@@ -485,7 +485,7 @@ End;
 {$ENDIF}
 
 {$IFNDEF FPC}
-  {$IF CompilerVersion > 21}
+  {$IF CompilerVersion > 24}
   TExtendedField = Class(TNumericField)
   Protected
    Function  GetAsExtended : Extended;
@@ -519,14 +519,14 @@ End;
 {$IFNDEF FPC}
   TSQLTimeStampOffsetField = Class(TSQLTimeStampField)
   Protected
-   {$IF CompilerVersion < 21}
+   {$IF CompilerVersion < 25}
    Procedure GetText    (Var Text     : String;
                          DisplayText  : Boolean); Override;
    {$IFEND}
    {$IFDEF FPC}
    Procedure SetAsString(const Value: string); override;
    {$ELSE}
-   {$IF CompilerVersion < 21}
+   {$IF CompilerVersion < 25}
    Procedure SetAsString(const Value: string); override;
    {$ELSE}
    Procedure SetAsString(Const AValue : String);  Override;
@@ -666,11 +666,11 @@ End;
                                          Value   : TBookmarkFlag); Override;
      {$ELSE}
       Procedure GetBookmarkData  (Buffer          : TRecordBuffer;
-                                  Data            : Pointer);       Override;
+                                  Data            : Pointer);     Override;
       Function GetBookmarkFlag   (Buffer          : TRecordBuffer) : TBookmarkFlag; Override;
       Function GetRecord         (Buffer          : TRecordBuffer;
                                   GetMode         : TGetMode;
-                                  DoCheck         : Boolean)       : TGetResult;    Override;
+                                  DoCheck         : Boolean)       : TGetResult;Override;
       Procedure InternalGotoBookmark(Bookmark     : Pointer);       Override;
       Procedure InternalInitRecord  (Buffer       : TRecordBuffer); Override;
       Procedure InternalLoadCurrentRecord(Buffer  : TRecordBuffer);
@@ -679,7 +679,7 @@ End;
                                           Data    : Pointer);       Override;
       Procedure SetBookmarkFlag          (Buffer  : TRecordBuffer;
                                           Value   : TBookmarkFlag); Override;
-      Procedure FreeRecordBuffer (Var Buffer      : TRecordBuffer);{$IFNDEF NEXTGEN}Override;{$ENDIF}
+      Procedure FreeRecordBuffer (Var Buffer      : TRecordBuffer);Override;
       Function GetRecNo                           : Longint;        Override;
       Function  GetRecordCount                    : Longint;        Override;
      {$IFEND}
@@ -710,7 +710,7 @@ End;
    Function  IsCursorOpen                      : Boolean;        Override;
    Procedure SetBlobStream            (Stream  : TStream);
    {$IFNDEF FPC}
-   {$IF CompilerVersion < 21}
+   {$IF CompilerVersion < 25}
    Procedure SetFieldData             (Field   : TField;
                                        Buffer  : Pointer);Overload; Override;
    {$ELSE}
@@ -745,7 +745,7 @@ End;
    {$ENDIF}
    {$IFNDEF FPC}
     {$IF NOT Defined(HAS_FMX)}
-     {$IF CompilerVersion < 21}
+     {$IF CompilerVersion < 25}
       Function    GetFieldData     (Field              : TField;
                                     Buffer             : Pointer)      : Boolean;   Overload; Override;
      {$ELSE}
@@ -1900,7 +1900,7 @@ end;
 {$IFDEF FPC}
 Function SameDefinitions(const S1, S2 : AnsiString) : Boolean;
 {$ELSE}
-{$IF CompilerVersion < 21}
+{$IF CompilerVersion < 25}
 Function SameDefinitions(const S1, S2 : AnsiString) : Boolean;
 {$ELSE}
 Function SameDefinitions(const S1, S2 : String)     : Boolean;
@@ -2121,7 +2121,7 @@ end;
 {$IFDEF FPC}
 Function pkStrHash(const AValue: AnsiString) : Int64;
 {$ELSE}
-{$IF CompilerVersion < 21}
+{$IF CompilerVersion < 25}
 Function pkStrHash(const AValue: AnsiString) : Int64;
 {$ELSE}
 Function pkStrHash(const AValue: String)     : Int64;
@@ -2174,7 +2174,7 @@ end;
 {$IFDEF FPC}
 Function SecondKeyBits(AValue: AnsiString): Integer;
 {$ELSE}
-{$IF CompilerVersion < 21}
+{$IF CompilerVersion < 25}
 Function SecondKeyBits(AValue: AnsiString): Integer;
 {$ELSE}
 Function SecondKeyBits(AValue: String): Integer;
@@ -2211,7 +2211,7 @@ end;
 {$IFDEF FPC}
 Function GetSymbolType(C: AnsiChar): TSymbolType;
 {$ELSE}
-{$IF CompilerVersion < 21}
+{$IF CompilerVersion < 25}
 Function GetSymbolType(C: AnsiChar): TSymbolType;
 {$ELSE}
 Function GetSymbolType(C: Char): TSymbolType;
@@ -2230,7 +2230,7 @@ end;
 {$IFDEF FPC}
 Procedure ParseWords(const S: AnsiString; L: TStrings);
 {$ELSE}
-{$IF CompilerVersion < 21}
+{$IF CompilerVersion < 25}
 Procedure ParseWords(const S: AnsiString; L: TStrings);
 {$ELSE}
 Procedure ParseWords(const S: String; L: TStrings);
@@ -2315,7 +2315,7 @@ end;
 {$IFDEF FPC}
 Procedure SwapShortString(var Value: ShortString);
 {$ELSE}
-{$IF CompilerVersion < 21}
+{$IF CompilerVersion < 25}
 Procedure SwapShortString(var Value: ShortString);
 {$ELSE}
 Procedure SwapShortString(var Value: String);
@@ -2326,7 +2326,7 @@ var
  {$IFDEF FPC}
   C: AnsiChar;
  {$ELSE}
-  {$IF CompilerVersion < 21}
+  {$IF CompilerVersion < 25}
    C: AnsiChar;
   {$ELSE}
    C: Char;
@@ -2341,7 +2341,7 @@ begin
     C := AnsiChar(Ord(Value[L]) xor Byte(-I));
     Value[L] := AnsiChar(Ord(Value[I]) xor Byte(-I));
    {$ELSE}
-    {$IF CompilerVersion < 21}
+    {$IF CompilerVersion < 25}
     C := AnsiChar(Ord(Value[L]) xor Byte(-I));
     Value[L] := AnsiChar(Ord(Value[I]) xor Byte(-I));
     {$ELSE}
@@ -2358,7 +2358,7 @@ begin
     {$IFDEF FPC}
     Value[I] := AnsiChar(Ord(Value[I]) xor Byte(-I));
     {$ELSE}
-     {$IF CompilerVersion < 21}
+     {$IF CompilerVersion < 25}
       Value[I] := AnsiChar(Ord(Value[I]) xor Byte(-I));
      {$ELSE}
       Value[I] := Char(Ord(Value[I]) xor Byte(-I));
@@ -2512,7 +2512,7 @@ begin
     RaiseInvalidOp;
   end;
  {$ELSE}
-  {$IF CompilerVersion < 21}
+  {$IF CompilerVersion < 25}
    with TRealVarData(Left) do
     case Operator of
       opAdd: VExtended := VExtended + PRealVarData(@Right).VExtended;
@@ -2547,7 +2547,7 @@ Begin
     {$IFDEF FPC}
      PRealVarData(@Dest).VExtended := StrToFloatEx(VarDataToStr(LSource));
     {$ELSE}
-     {$IF CompilerVersion < 21}
+     {$IF CompilerVersion < 25}
      TRealVarData(Dest).VExtended  := StrToFloatEx(VarDataToStr(LSource));
      {$IFEND}
      Variant(Dest)                 := StrToFloatEx(VarDataToStr(LSource));
@@ -2575,7 +2575,7 @@ Begin
       varString  : VarDataFromLStr(Dest, AnsiString(FloatToStrF(PRealVarData(@Source).VExtended, ffGeneral, 19, 0)));
       varUString : VarDataFromStr(Dest, WideString(FloatToStrF(PRealVarData(@Source).VExtended, ffGeneral, 19, 0)));
      {$ELSE}
-      {$IF CompilerVersion < 21}
+      {$IF CompilerVersion < 25}
       varString  : VarDataFromLStr(Dest, AnsiString(FloatToStrF(PRealVarData(@Source).VExtended, ffGeneral, 19, 0)));
       varUString : VarDataFromStr(Dest, WideString(FloatToStrF(PRealVarData(@Source).VExtended, ffGeneral, 19, 0)));
       {$ELSE}
@@ -2987,7 +2987,7 @@ end;
 {$IFDEF FPC}
 Function TVariantArray.GetDataAnsiString(Index : Integer) : AnsiString;
 {$ELSE}
-{$IF CompilerVersion < 21}
+{$IF CompilerVersion < 25}
 Function TVariantArray.GetDataAnsiString(Index : Integer) : AnsiString;
 {$ELSE}
 Function TVariantArray.GetDataAnsiString(Index : Integer) : String;
@@ -3114,7 +3114,7 @@ end;
 {$IFDEF FPC}
 Function TVariantArray.GetDefinitions  : AnsiString;
 {$ELSE}
-{$IF CompilerVersion < 21}
+{$IF CompilerVersion < 25}
 Function TVariantArray.GetDefinitions  : AnsiString;
 {$ELSE}
 Function TVariantArray.GetDefinitions  : String;
@@ -5533,7 +5533,7 @@ Begin
 End;
 {$ENDIF}
 {$ENDIF}
-{$IF CompilerVersion > 21}
+{$IF CompilerVersion > 24}
 Function TExtendedField.GetAsExtended: Extended;
 Var
  Data : TValueBuffer;
@@ -5631,7 +5631,7 @@ End;
 {$ENDIF}
 
 {$IFNDEF FPC}
-{$IF CompilerVersion < 21}
+{$IF CompilerVersion < 25}
 Procedure TSQLTimeStampOffsetField.GetText(var Text: string;
   DisplayText: Boolean);
 Var
@@ -5653,7 +5653,7 @@ End;
 {$ENDIF}
 
 {$IFNDEF FPC}
-{$IF CompilerVersion < 21}
+{$IF CompilerVersion < 25}
 Procedure TSQLTimeStampOffsetField.SetAsString(Const Value: string);
 {$ELSE}
 Procedure TSQLTimeStampOffsetField.SetAsString(Const AValue: string);
@@ -5662,7 +5662,7 @@ Var
  S : String;
  P : Integer;
 Begin
- {$IF CompilerVersion < 21}
+ {$IF CompilerVersion < 25}
   S := Value;
  {$ELSE}
   S := AValue;
@@ -6175,7 +6175,7 @@ end;
 
 {$IFNDEF FPC}
 {$IF NOT Defined(HAS_FMX)}
-{$IF CompilerVersion < 21}
+{$IF CompilerVersion < 25}
 Function TDWCustomDataSet.GetFieldData (Field              : TField;
                                         Buffer             : Pointer)      : Boolean;
 {$ELSE}
@@ -6188,7 +6188,7 @@ Function TDWCustomDataSet.GetFieldData (AField             : TField;
   V: Variant;
   B: Boolean;
  Begin
-  {$IF CompilerVersion < 21}
+  {$IF CompilerVersion < 25}
    V := Field.LookupDataSet.Lookup(Field.LookupKeyFields,
    FArray.GetDataResult(FArray.RecNo, Field.KeyFields), Field.LookupResultField);
   {$ELSE}
@@ -6207,7 +6207,7 @@ Function TDWCustomDataSet.GetFieldData (AField             : TField;
      {$IFDEF FPC}
       DataEvent(deFieldChange, NativeInt(Field));
      {$ELSE}
-      {$IF CompilerVersion < 21}
+      {$IF CompilerVersion < 25}
        DataEvent(deFieldChange, Longint(Field));
       {$ELSE}
        DataEvent(deFieldChange, Longint(aField));
@@ -6224,7 +6224,7 @@ Var
 begin
   Result := False;
 {$MESSAGE Hint 'Todo: switch off window Local Variables when debug...'}
-  {$IF CompilerVersion < 21}
+  {$IF CompilerVersion < 25}
   if not IsEmpty and ((Field.FieldNo > 0) or
     (Field.FieldKind in [fkCalculated, fkLookup])) then
   {$ELSE}
@@ -6235,7 +6235,7 @@ begin
     Temp := FArray.RecNo;
     Row := PVarRecInfo(ActiveBuffer).Bookmark;
     FArray.RecNo := Row;
-    {$IF CompilerVersion < 21}
+    {$IF CompilerVersion < 25}
     I := FArray.FieldIndex[Field.FieldName];
     case Field.FieldKind of
     {$ELSE}
@@ -6251,7 +6251,7 @@ begin
           Exit;
         end;
     end;
-    {$IF CompilerVersion < 21}
+    {$IF CompilerVersion < 25}
     if Assigned (Buffer) then
     {$ELSE}
     if Assigned (aBuffer) then
@@ -6272,7 +6272,7 @@ begin
          {$IF Defined(HAS_UTF8)}
           aBuffer := TValueBuffer(TEncoding.ANSI.GetBytes(S)); //TEncoding.ANSI.GetBytes(S));
          {$ELSE}
-          {$IF CompilerVersion < 21}
+          {$IF CompilerVersion < 25}
            Move(Pointer(@S[1])^, Buffer^, Length(S));
           {$ELSE}
            aBuffer := TValueBuffer(TEncoding.ANSI.GetBytes(S));
@@ -6280,34 +6280,34 @@ begin
          {$IFEND}
         end;
         ftSmallint:
-          {$IF CompilerVersion < 21}
+          {$IF CompilerVersion < 25}
           PSmallint(Buffer)^ := FArray.Data[I];
           {$ELSE}
           PSmallint(aBuffer)^ := FArray.Data[I];
           {$IFEND}
 {$IFDEF COMPILER12_UP}
         ftLongWord:
-          {$IF CompilerVersion < 21}
+          {$IF CompilerVersion < 25}
           PLongWord(Buffer)^ := FArray.Data[I];
           {$ELSE}
           PLongWord(aBuffer)^ := FArray.Data[I];
           {$IFEND}
         ftShortint, ftByte:
-          {$IF CompilerVersion < 21}
+          {$IF CompilerVersion < 25}
           PByte(Buffer)^ := FArray.Data[I];
           {$ELSE}
           PByte(aBuffer)^ := FArray.Data[I];
           {$IFEND}
         ftExtended:
-          {$IF CompilerVersion < 21}
-          PExtended(Buffer)^ := _RealSupportManager._VarToReal(FArray.Data[I]);
+          {$IF CompilerVersion < 25}
+          PExtended(Buffer)^ := Extended(FArray.Data[I]); //_RealSupportManager._VarToReal(FArray.Data[I]);
           {$ELSE}
           PExtended(aBuffer)^ := FArray.Data[I];
           {$IFEND}
 {$ENDIF}
 {$IFDEF COMPILER14_UP}
         ftSingle:
-          {$IF CompilerVersion < 21}
+          {$IF CompilerVersion < 25}
           PSingle(Buffer)^ := FArray.Data[I];
           {$ELSE}
           PSingle(aBuffer)^ := FArray.Data[I];
@@ -6316,7 +6316,7 @@ begin
           D := FArray.Data[I];
           if WindowsStopsAt1601 > YearOf(D) then
             D := IncYear(D, WindowsStopsAt1601 - YearOf(D));
-          {$IF CompilerVersion < 21}
+          {$IF CompilerVersion < 25}
           PSQLTimeStampOffset(Buffer)^ := DateTimeToSQLTimeStampOffset(D);
           {$ELSE}
           PSQLTimeStampOffset(aBuffer)^ := DateTimeToSQLTimeStampOffset(D);
@@ -6324,31 +6324,31 @@ begin
         end;
 {$ENDIF}
         ftInteger, ftAutoInc, ftTime, ftDate:
-          {$IF CompilerVersion < 21}
+          {$IF CompilerVersion < 25}
           PInteger(Buffer)^ := FArray.Data[I];
           {$ELSE}
           PInteger(aBuffer)^ := FArray.Data[I];
           {$IFEND}
         ftWord:
-          {$IF CompilerVersion < 21}
+          {$IF CompilerVersion < 25}
           PWord(Buffer)^ := FArray.Data[I];
           {$ELSE}
           PWord(aBuffer)^ := FArray.Data[I];
           {$IFEND}
         ftBoolean:
-          {$IF CompilerVersion < 21}
+          {$IF CompilerVersion < 25}
           PWordBool(Buffer)^ := FArray.Data[I];
           {$ELSE}
           PWordBool(aBuffer)^ := FArray.Data[I];
           {$IFEND}
         ftFloat, ftCurrency:
-          {$IF CompilerVersion < 21}
+          {$IF CompilerVersion < 25}
           PDouble(Buffer)^ := FArray.Data[I];
           {$ELSE}
           PDouble(aBuffer)^ := FArray.Data[I];
           {$IFEND}
         ftBCD: begin
-          {$IF CompilerVersion < 21}
+          {$IF CompilerVersion < 25}
           P := TBCDField(Field).Precision;
           if P = 0 then P := MaxFMTBcdDigits;
           Sc := Field.Size;
@@ -6363,27 +6363,27 @@ begin
           {$IFEND}
         end;
         ftFMTBcd:
-          {$IF CompilerVersion < 21}
+          {$IF CompilerVersion < 25}
           PBCD(Buffer)^ := VarToBcd(FArray.Data[I]);
           {$ELSE}
           PBCD(aBuffer)^ := VarToBcd(FArray.Data[I]);
           {$IFEND}
         ftDateTime: Begin
                      D := FArray.Data[I];
-                     {$IF CompilerVersion < 21}
+                     {$IF CompilerVersion < 25}
                      PSQLTimeStamp(Buffer)^ := DateTimeToSQLTimeStamp(D);
                      {$ELSE}
                      PSQLTimeStamp(aBuffer)^ := DateTimeToSQLTimeStamp(D);
                      {$IFEND}
                     End;
         ftLargeint:
-          {$IF CompilerVersion < 21}
+          {$IF CompilerVersion < 25}
           PInt64(Buffer)^ := FArray.Data[I];
           {$ELSE}
           PInt64(aBuffer)^ := FArray.Data[I];
           {$IFEND}
         ftVariant:
-          {$IF CompilerVersion < 21}
+          {$IF CompilerVersion < 25}
           PVariant(Buffer)^ := FArray.Data[I];
           {$ELSE}
           PVariant(aBuffer)^ := FArray.Data[I];
@@ -6395,7 +6395,7 @@ begin
 {$ENDIF}
         ftTimeStamp: begin
           D := FArray.Data[I];
-          {$IF CompilerVersion < 21}
+          {$IF CompilerVersion < 25}
           PSQLTimeStamp(Buffer)^ := DateTimeToSQLTimeStamp(D);
           {$ELSE}
           PSQLTimeStamp(aBuffer)^ := DateTimeToSQLTimeStamp(D);
@@ -6409,7 +6409,7 @@ begin
          {$IF Defined(HAS_UTF8)}
           aBuffer := TValueBuffer(W);
          {$ELSE}
-          {$IF CompilerVersion < 21}
+          {$IF CompilerVersion < 25}
           Buffer := tBytes(W);
           {$ELSE}
           aBuffer := TValueBuffer(W);
@@ -6428,7 +6428,7 @@ begin
             PSQLTimeStampOffset(Buffer)^ := DateTimeToSQLTimeStamp(D);
           end;
 {$ENDIF}  dwftColor:
-          {$IF CompilerVersion < 21}
+          {$IF CompilerVersion < 25}
             PInteger(Buffer)^ := FArray.Data[I];
           {$ELSE}
             PInteger(aBuffer)^ := FArray.Data[I];
@@ -7249,7 +7249,7 @@ end;
 
 
 {$IFNDEF FPC}
-{$IF CompilerVersion < 21}
+{$IF CompilerVersion < 25}
 Procedure TDWCustomDataSet.SetFieldData(Field   : TField;
                                         Buffer  : Pointer);
 {$ELSE}
@@ -7308,7 +7308,7 @@ Begin
                                   FArray.Data[I] := S;
                                  {$IFEND}
                                 {$ELSE}
-                                 {$IF CompilerVersion < 21}
+                                 {$IF CompilerVersion < 25}
                                   SetLength(S, Length(PAnsiChar(Buffer)));
                                   Move(Buffer^, S[1], Length(S));
                                   FArray.Data[I] := S;
@@ -7568,7 +7568,7 @@ Begin
                                   FArray.Data[I] := S + #0
                                  {$IFEND}
                                 {$ELSE}
-                                 {$IF CompilerVersion < 21}
+                                 {$IF CompilerVersion < 25}
                                   Size := Length(PWideChar(Buffer));
                                   S := utf8decode(StringReplace(Copy(PWideChar(Buffer), 1, Size), #0, '', [rfREplaceAll]));
                                   FArray.Data[I] := S + #0

@@ -23,27 +23,30 @@ unit uRESTDWPoolerDB;
  Mizael Rocha               - Member Tester and DEMO Developer.
  Flávio Motta               - Member Tester and DEMO Developer.
  Itamar Gaucho              - Member Tester and DEMO Developer.
+ Ico Menezes                - Member Tester and DEMO Developer.
 }
+
 
 interface
 
 uses SysUtils,  Classes,
-     DB,        uRESTDWBase,  uDWPoolerMethod,
+     DB,        uDWPoolerMethod,
      uRESTDWMasterDetailData, uDWConstsData, uDWAbout,
      uDWMassiveBuffer,        SyncObjs, uDWJSONTools,
-     uDWResponseTranslator{$IFNDEF FPC}
-                           {$IF CompilerVersion > 21} // Delphi 2010 pra cima
-                            {$IF Defined(HAS_FMX)} // Alteardo para IOS Brito
-                              , System.json
-                            {$ELSE}
-                             , uDWJSON
-                            {$IFEND}
-                           {$ELSE}
-                            , uDWJSON
-                           {$IFEND}
-                           {$ELSE}
-                           , uDWJSON
-                           {$ENDIF}
+     uDWResponseTranslator,   uSystemEvents, uRESTDWBase
+     {$IFNDEF FPC}
+     {$IF CompilerVersion > 21} // Delphi 2010 pra cima
+      {$IF Defined(HAS_FMX)} // Alteardo para IOS Brito
+       , System.json
+      {$ELSE}
+       , uDWJSON
+      {$IFEND}
+     {$ELSE}
+      , uDWJSON
+     {$IFEND}
+     {$ELSE}
+     , uDWJSON
+     {$ENDIF}
      , uDWJSONObject
      {$IFDEF FPC}
      , uDWConsts,
@@ -76,26 +79,23 @@ uses SysUtils,  Classes,
      {$ENDIF}
 
 Type
- TOnEventDB               = Procedure (DataSet       : TDataSet)   of Object;
- TOnAfterScroll           = Procedure (DataSet       : TDataSet)   of Object;
- TOnAfterOpen             = Procedure (DataSet       : TDataSet)   of Object;
- TOnAfterClose            = Procedure (DataSet       : TDataSet)   of Object;
- TOnCalcFields            = Procedure (DataSet       : TDataSet)   of Object;
- TOnAfterCancel           = Procedure (DataSet       : TDataSet)   of Object;
- TOnAfterInsert           = Procedure (DataSet       : TDataSet)   of Object;
- TOnBeforeDelete          = Procedure (DataSet       : TDataSet)   of Object;
- TOnBeforePost            = Procedure (DataSet       : TDataSet)   of Object;
- TOnAfterPost             = Procedure (DataSet       : TDataSet)   of Object;
- TOnEventConnection       = Procedure (Sucess        : Boolean;
-                                       Const Error   : String)     of Object;
- TOnEventBeforeConnection = Procedure (Sender        : TComponent) of Object;
- TOnEventTimer            = Procedure of Object;
- TBeforeGetRecords        = Procedure (Sender        : TObject;
-                                       Var OwnerData : OleVariant) of Object;
-{$IFDEF  UP_BARBOSA1}
- TOnInBlockEvent          = Procedure (Sender        : TObject;
-                                       Const BlockEvent : Boolean) of Object;
-{$ENDIF}
+ TOnEventDB               = Procedure (DataSet            : TDataSet)        Of Object;
+ TOnAfterScroll           = Procedure (DataSet            : TDataSet)        Of Object;
+ TOnAfterOpen             = Procedure (DataSet            : TDataSet)        Of Object;
+ TOnAfterClose            = Procedure (DataSet            : TDataSet)        Of Object;
+ TOnCalcFields            = Procedure (DataSet            : TDataSet)        Of Object;
+ TOnAfterCancel           = Procedure (DataSet            : TDataSet)        Of Object;
+ TOnAfterInsert           = Procedure (DataSet            : TDataSet)        Of Object;
+ TOnBeforeDelete          = Procedure (DataSet            : TDataSet)        Of Object;
+ TOnBeforePost            = Procedure (DataSet            : TDataSet)        Of Object;
+ TOnAfterPost             = Procedure (DataSet            : TDataSet)        Of Object;
+ TOnEventConnection       = Procedure (Sucess             : Boolean;
+                                       Const Error        : String)          Of Object;
+ TOnEventBeforeConnection = Procedure (Sender             : TComponent)      Of Object;
+ TOnEventTimer            = Procedure                                        Of Object;
+ TBeforeGetRecords        = Procedure (Sender             : TObject;
+                                       Var OwnerData      : OleVariant)      Of Object;
+ TOnPrepareConnection     = Procedure (Var ConnectionDefs : TConnectionDefs) Of Object;
 
 Type
  TFieldDefinition = Class
@@ -144,7 +144,6 @@ Type
   Property OnEventTimer : TOnEventTimer Read vEvent     Write SetEventTimer; //Evento a executar
 End;
 
-
  TProxyOptions = Class(TPersistent)
  Private
   vServer,              //Servidor Proxy na Rede
@@ -159,6 +158,21 @@ End;
   Property Port     : Integer Read vPort     Write vPort;     //Porta do Servidor Proxy
   Property Login    : String  Read vLogin    Write vLogin;    //Login do Servidor Proxy
   Property Password : String  Read vPassword Write vPassword; //Senha do Servidor Proxy
+End;
+
+Type
+ TClientConnectionDefs = Class(TPersistent)
+ Private
+  vActive : Boolean;
+  vConnectionDefs : TConnectionDefs;
+  Procedure SetClientConnectionDefs(Value : Boolean);
+  Procedure SetConnectionDefs(Value : TConnectionDefs);
+ Public
+  Constructor Create; //Cria o Componente
+  Destructor  Destroy;Override;//Destroy a Classe
+ Published
+  Property Active         : Boolean         Read vActive         Write SetClientConnectionDefs;
+  Property ConnectionDefs : TConnectionDefs Read vConnectionDefs Write SetConnectionDefs;
 End;
 
 Type
@@ -179,10 +193,11 @@ Type
   vRestURL,                                          //URL do WebService REST
   vRestModule,                                       //Classe Principal do Servidor a ser utilizada
   vMyIP,                                             //Meu IP vindo do Servidor
-  vRestPooler          : String;                     //Qual o Pooler de Conexão do DataSet
-  vPoolerPort          : Integer;                    //A Porta do Pooler
-  vProxy               : Boolean;                    //Diz se tem servidor Proxy
-  vProxyOptions        : TProxyOptions;              //Se tem Proxy diz quais as opções
+  vRestPooler           : String;                     //Qual o Pooler de Conexão do DataSet
+  vPoolerPort           : Integer;                    //A Porta do Pooler
+  vClientConnectionDefs : TClientConnectionDefs;
+  vProxy                : Boolean;                    //Diz se tem servidor Proxy
+  vProxyOptions         : TProxyOptions;              //Se tem Proxy diz quais as opções
   vEncodeStrings,
   vCompression,                                      //Se Vai haver compressão de Dados
   vConnected           : Boolean;                    //Diz o Estado da Conexão
@@ -230,7 +245,11 @@ Type
                            RESTClientPooler : TRESTClientPooler = Nil);Overload;
   Function  GetStateDB : Boolean;
   Procedure SetMyIp(Value : String);
+ protected
+   //Magno
+   procedure Loaded; override;
  Public
+  Function    GetServerEvents: TStringList;
   Function    GetRestPoolers : TStringList;          //Retorna a Lista de DataSet Sources do Pooler
   Constructor Create(AOwner  : TComponent);Override; //Cria o Componente
   Destructor  Destroy;Override;                      //Destroy a Classe
@@ -242,41 +261,42 @@ Type
   Procedure   OpenDatasets(Datasets           : Array of {$IFDEF FPC}TRESTDWClientSQLBase{$ELSE}TObject{$ENDIF};
                            Var   Error        : Boolean;
                            Var   MessageError : String);Overload;
-  Property    Connected       : Boolean                  Read GetStateDB          Write SetConnection;
+  Property Connected            : Boolean                  Read GetStateDB            Write SetConnection;
  Published
-  Property OnConnection       : TOnEventConnection       Read vOnEventConnection  Write vOnEventConnection; //Evento relativo a tudo que acontece quando tenta conectar ao Servidor
-  Property OnBeforeConnect    : TOnEventBeforeConnection Read vOnBeforeConnection Write vOnBeforeConnection; //Evento antes de Connectar o Database
-  Property Active             : Boolean                  Read vConnected          Write SetConnection;      //Seta o Estado da Conexão
-  Property Compression        : Boolean                  Read vCompression        Write vCompression;       //Compressão de Dados
-  Property MyIP               : String                   Read vMyIP               Write SetMyIp;
-  Property Login              : String                   Read vLogin              Write vLogin;             //Login do Usuário caso haja autenticação
-  Property Password           : String                   Read vPassword           Write vPassword;          //Senha do Usuário caso haja autenticação
-  Property Proxy              : Boolean                  Read vProxy              Write vProxy;             //Diz se tem servidor Proxy
-  Property ProxyOptions       : TProxyOptions            Read vProxyOptions       Write vProxyOptions;      //Se tem Proxy diz quais as opções
-  Property PoolerService      : String                   Read vRestWebService     Write vRestWebService;    //Host do WebService REST
-  Property PoolerURL          : String                   Read vRestURL            Write vRestURL;           //URL do WebService REST
-  Property PoolerPort         : Integer                  Read vPoolerPort         Write SetPoolerPort;      //A Porta do Pooler do DataSet
-  Property PoolerName         : String                   Read vRestPooler         Write SetRestPooler;      //Qual o Pooler de Conexão ligado ao componente
-  Property RestModule         : String                   Read vRestModule         Write vRestModule;        //Classe do Servidor REST Principal
-  Property StateConnection    : TAutoCheckData           Read vAutoCheckData      Write vAutoCheckData;     //Autocheck da Conexão
-  Property RequestTimeOut     : Integer                  Read vTimeOut            Write vTimeOut;           //Timeout da Requisição
-  Property EncodeStrings      : Boolean                  Read vEncodeStrings      Write vEncodeStrings;
-  Property Encoding           : TEncodeSelect            Read VEncondig           Write VEncondig;          //Encoding da string
-  Property Context            : string                   Read vContentex          Write vContentex;         //Contexto
-  Property StrsTrim           : Boolean                  Read vStrsTrim           Write vStrsTrim;
-  Property StrsEmpty2Null     : Boolean                  Read vStrsEmpty2Null     Write vStrsEmpty2Null;
-  Property StrsTrim2Len       : Boolean                  Read vStrsTrim2Len       Write vStrsTrim2Len;
-  Property WelcomeMessage     : String                   Read vWelcomeMessage     Write vWelcomeMessage;
-  Property OnWork             : TOnWork                  Read vOnWork             Write SetOnWork;
-  Property OnWorkBegin        : TOnWorkBegin             Read vOnWorkBegin        Write SetOnWorkBegin;
-  Property OnWorkEnd          : TOnWorkEnd               Read vOnWorkEnd          Write SetOnWorkEnd;
-  Property OnStatus           : TOnStatus                Read vOnStatus           Write SetOnStatus;
+  Property OnConnection         : TOnEventConnection       Read vOnEventConnection    Write vOnEventConnection; //Evento relativo a tudo que acontece quando tenta conectar ao Servidor
+  Property OnBeforeConnect      : TOnEventBeforeConnection Read vOnBeforeConnection   Write vOnBeforeConnection; //Evento antes de Connectar o Database
+  Property Active               : Boolean                  Read vConnected            Write SetConnection;      //Seta o Estado da Conexão
+  Property Compression          : Boolean                  Read vCompression          Write vCompression;       //Compressão de Dados
+  Property MyIP                 : String                   Read vMyIP                 Write SetMyIp;
+  Property Login                : String                   Read vLogin                Write vLogin;             //Login do Usuário caso haja autenticação
+  Property Password             : String                   Read vPassword             Write vPassword;          //Senha do Usuário caso haja autenticação
+  Property Proxy                : Boolean                  Read vProxy                Write vProxy;             //Diz se tem servidor Proxy
+  Property ProxyOptions         : TProxyOptions            Read vProxyOptions         Write vProxyOptions;      //Se tem Proxy diz quais as opções
+  Property PoolerService        : String                   Read vRestWebService       Write vRestWebService;    //Host do WebService REST
+  Property PoolerURL            : String                   Read vRestURL              Write vRestURL;           //URL do WebService REST
+  Property PoolerPort           : Integer                  Read vPoolerPort           Write SetPoolerPort;      //A Porta do Pooler do DataSet
+  Property PoolerName           : String                   Read vRestPooler           Write SetRestPooler;      //Qual o Pooler de Conexão ligado ao componente
+  Property RestModule           : String                   Read vRestModule           Write vRestModule;        //Classe do Servidor REST Principal
+  Property StateConnection      : TAutoCheckData           Read vAutoCheckData        Write vAutoCheckData;     //Autocheck da Conexão
+  Property RequestTimeOut       : Integer                  Read vTimeOut              Write vTimeOut;           //Timeout da Requisição
+  Property EncodeStrings        : Boolean                  Read vEncodeStrings        Write vEncodeStrings;
+  Property Encoding             : TEncodeSelect            Read VEncondig             Write VEncondig;          //Encoding da string
+  Property Context              : string                   Read vContentex            Write vContentex;         //Contexto
+  Property StrsTrim             : Boolean                  Read vStrsTrim             Write vStrsTrim;
+  Property StrsEmpty2Null       : Boolean                  Read vStrsEmpty2Null       Write vStrsEmpty2Null;
+  Property StrsTrim2Len         : Boolean                  Read vStrsTrim2Len         Write vStrsTrim2Len;
+  Property WelcomeMessage       : String                   Read vWelcomeMessage       Write vWelcomeMessage;
+  Property OnWork               : TOnWork                  Read vOnWork               Write SetOnWork;
+  Property OnWorkBegin          : TOnWorkBegin             Read vOnWorkBegin          Write SetOnWorkBegin;
+  Property OnWorkEnd            : TOnWorkEnd               Read vOnWorkEnd            Write SetOnWorkEnd;
+  Property OnStatus             : TOnStatus                Read vOnStatus             Write SetOnStatus;
   {$IFDEF FPC}
-  Property DatabaseCharSet    : TDatabaseCharSet         Read vDatabaseCharSet    Write vDatabaseCharSet;
+  Property DatabaseCharSet      : TDatabaseCharSet         Read vDatabaseCharSet      Write vDatabaseCharSet;
   {$ENDIF}
-  Property AccessTag          : String                   Read vAccessTag          Write vAccessTag;
-  Property ParamCreate        : Boolean                  read vParamCreate        write vParamCreate;
-  Property TypeRequest        : TTypeRequest             Read vTypeRequest        Write vTypeRequest       Default trHttp;
+  Property AccessTag            : String                   Read vAccessTag            Write vAccessTag;
+  Property ParamCreate          : Boolean                  Read vParamCreate          Write vParamCreate;
+  Property TypeRequest          : TTypeRequest             Read vTypeRequest          Write vTypeRequest       Default trHttp;
+  Property ClientConnectionDefs : TClientConnectionDefs    Read vClientConnectionDefs Write vClientConnectionDefs;
 End;
 
 Type
@@ -285,9 +305,6 @@ Type
   vBookmark            : Integer;
   vActive,
   vInactive            : Boolean;
-  {$IFDEF  UP_BARBOSA1}
-  Procedure   ProcInBlockEvents  (Const BlockEvent : Boolean);virtual;
-  {$ENDIF}
  Private
   vDWResponseTranslator : TDWResponseTranslator;
   vMasterDetailItem     : TMasterDetailItem;
@@ -301,9 +318,6 @@ Type
   vOnAfterClose         : TOnAfterClose;
   vOnCalcFields         : TDatasetEvents;
 //  OldData              : TRESTDWClientSQLBase;
-  {$IFDEF  UP_BARBOSA1}
-  vOnInBlockEvent       : TOnInBlockEvent;
-  {$ENDIF}
   vNewRecord,
   vBeforeOpen,
   vBeforeEdit,
@@ -388,7 +402,7 @@ Type
   Procedure   SetSQL             (Value   : TStringList);   //Seta o SQL a ser usado
   Procedure   CreateParams;                                 //Cria os Parametros na lista de Dataset
   Procedure   SetDataBase        (Value   : TRESTDWDataBase); //Diz o REST Database
-  Function    GetData(DataSet  : TJSONValue = Nil) : Boolean;                            //Recebe os Dados da Internet vindo do Servidor REST
+  Function    GetData(DataSet   : TJSONValue = Nil) : Boolean;//Recebe os Dados da Internet vindo do Servidor REST
   Procedure   SetUpdateTableName (Value   : String);        //Diz qual a tabela que será feito Update no Banco
   Procedure   OldAfterPost       (DataSet : TDataSet);      //Eventos do Dataset para realizar o AfterPost
   Procedure   OldAfterDelete     (DataSet : TDataSet);      //Eventos do Dataset para realizar o AfterDelete
@@ -413,6 +427,7 @@ Type
   Procedure   CleanFieldList;
  Public
   //Métodos
+  Function    OpenJson(JsonValue : String = '') : Boolean;     //Recebe os Dados da Internet vindo do Servidor REST
   Procedure   SetInBlockEvents(const Value: Boolean);
   Procedure   SetInDesignEvents(const Value: Boolean);Overload;
   Function    GetInBlockEvents : Boolean;
@@ -466,9 +481,6 @@ Type
   Property OnGetDataError         : TOnEventConnection    Read vOnGetDataError           Write vOnGetDataError;         //Recebe os Erros de ExecSQL ou de GetData
   Property AfterScroll            : TOnAfterScroll        Read vOnAfterScroll            Write vOnAfterScroll;
   Property AfterOpen              : TOnAfterOpen          Read vOnAfterOpen              Write vOnAfterOpen;
-  {$IFDEF  UP_BARBOSA1}
-  Property OnInBlockEvent         : TOnInBlockEvent       Read vOnInBlockEvent           Write vOnInBlockEvent;
-  {$ENDIF}
   Property AfterClose             : TOnAfterClose         Read vOnAfterClose             Write vOnAfterClose;
   Property Active                 : Boolean               Read vActive                   Write SetActiveDB;             //Estado do Dataset
   Property DataCache              : Boolean               Read vDataCache                Write vDataCache;              //Diz se será salvo o último Stream do Dataset
@@ -559,63 +571,67 @@ Type
   vStrsEmpty2Null,
   vStrsTrim2Len,
   vEncodeStrings,
-  vCompression       : Boolean;
-  vEncoding          : TEncodeSelect;
-  vCommitRecords     : Integer;
+  vCompression         : Boolean;
+  vEncoding            : TEncodeSelect;
+  vCommitRecords       : Integer;
   {$IFDEF FPC}
-  vDatabaseCharSet   : TDatabaseCharSet;
+  vDatabaseCharSet     : TDatabaseCharSet;
   {$ENDIF}
-  vParamCreate       : Boolean;
+  vParamCreate         : Boolean;
+  vOnPrepareConnection : TOnPrepareConnection;
  Public
   Constructor Create(AOwner  : TComponent);Override; //Cria o Componente
-  Function ApplyUpdates         (Massive,
-                                 SQL               : String;
-                                 Params            : TDWParams;
-                                 Var Error         : Boolean;
-                                 Var MessageError  : String) : TJSONValue;Virtual; Abstract;
-  Procedure ApplyUpdates_MassiveCache(MassiveCache : String;
-                                      Var Error    : Boolean;
-                                      Var MessageError  : String);Virtual; Abstract;
-  Function ExecuteCommand       (SQL        : String;
-                                 Var Error  : Boolean;
-                                 Var MessageError : String;
-                                 Execute    : Boolean = False) : TJSONValue;Overload;Virtual;abstract;
-  Function ExecuteCommand       (SQL              : String;
-                                 Params           : TDWParams;
-                                 Var Error        : Boolean;
-                                 Var MessageError : String;
-                                 Execute          : Boolean = False) : TJSONValue;Overload;Virtual;abstract;
-  Function InsertMySQLReturnID  (SQL              : String;
-                                 Var Error        : Boolean;
-                                 Var MessageError : String) : Integer;Overload;Virtual;abstract;
-  Function InsertMySQLReturnID  (SQL              : String;
-                                 Params           : TDWParams;
-                                 Var Error        : Boolean;
-                                 Var MessageError : String) : Integer;Overload;Virtual;abstract;
-  Procedure ExecuteProcedure    (ProcName         : String;
-                                 Params           : TDWParams;
-                                 Var Error        : Boolean;
-                                 Var MessageError : String);Virtual;abstract;
-  Procedure ExecuteProcedurePure(ProcName         : String;
-                                 Var Error        : Boolean;
-                                 Var MessageError : String);Virtual;abstract;
-  Function  OpenDatasets        (DatasetsLine     : String;
-                                 Var Error        : Boolean;
-                                 Var MessageError : String) : TJSONValue;Virtual;abstract;
+  Function ApplyUpdates           (Massive,
+                                   SQL               : String;
+                                   Params            : TDWParams;
+                                   Var Error         : Boolean;
+                                   Var MessageError  : String) : TJSONValue;        Virtual;Abstract;
+  Procedure ApplyUpdates_MassiveCache(MassiveCache   : String;
+                                      Var Error      : Boolean;
+                                      Var MessageError  : String);                  Virtual;Abstract;
+  Function ExecuteCommand         (SQL              : String;
+                                   Var Error        : Boolean;
+                                   Var MessageError : String;
+                                   Execute          : Boolean = False) : TJSONValue;Overload;Virtual;Abstract;
+  Function ExecuteCommand         (SQL              : String;
+                                   Params           : TDWParams;
+                                   Var Error        : Boolean;
+                                   Var MessageError : String;
+                                   Execute          : Boolean = False) : TJSONValue;Overload;Virtual;Abstract;
+  Function InsertMySQLReturnID    (SQL              : String;
+                                   Var Error        : Boolean;
+                                   Var MessageError : String)          : Integer;   Overload;Virtual;Abstract;
+  Function InsertMySQLReturnID    (SQL              : String;
+                                   Params           : TDWParams;
+                                   Var Error        : Boolean;
+                                   Var MessageError : String)          : Integer;   Overload;Virtual;Abstract;
+  Procedure ExecuteProcedure      (ProcName         : String;
+                                   Params           : TDWParams;
+                                   Var Error        : Boolean;
+                                   Var MessageError : String);                      Virtual;Abstract;
+  Procedure ExecuteProcedurePure  (ProcName           : String;
+                                   Var Error          : Boolean;
+                                   Var MessageError   : String);                    Virtual;Abstract;
+  Function  OpenDatasets          (DatasetsLine       : String;
+                                   Var Error          : Boolean;
+                                   Var MessageError   : String)        : TJSONValue;Virtual;Abstract;
+  Class Procedure CreateConnection(Const ConnectionDefs : TConnectionDefs;
+                                   Var Connection       : TObject);                 Virtual;Abstract;
+  Procedure PrepareConnection     (Var ConnectionDefs : TConnectionDefs);           Virtual;Abstract;
   Procedure Close;Virtual;abstract;
- Public
-  Property StrsTrim          : Boolean          Read vStrsTrim        Write vStrsTrim;
-  Property StrsEmpty2Null    : Boolean          Read vStrsEmpty2Null  Write vStrsEmpty2Null;
-  Property StrsTrim2Len      : Boolean          Read vStrsTrim2Len    Write vStrsTrim2Len;
-  Property Compression       : Boolean          Read vCompression     Write vCompression;
-  Property EncodeStringsJSON : Boolean          Read vEncodeStrings   Write vEncodeStrings;
-  Property Encoding          : TEncodeSelect    Read vEncoding        Write vEncoding;
-  property ParamCreate       : Boolean          Read vParamCreate     Write vParamCreate;
+  Property StrsTrim            : Boolean              Read vStrsTrim            Write vStrsTrim;
+  Property StrsEmpty2Null      : Boolean              Read vStrsEmpty2Null      Write vStrsEmpty2Null;
+  Property StrsTrim2Len        : Boolean              Read vStrsTrim2Len        Write vStrsTrim2Len;
+  Property Compression         : Boolean              Read vCompression         Write vCompression;
+  Property EncodeStringsJSON   : Boolean              Read vEncodeStrings       Write vEncodeStrings;
+  Property Encoding            : TEncodeSelect        Read vEncoding            Write vEncoding;
+  property ParamCreate         : Boolean              Read vParamCreate         Write vParamCreate;
  Published
  {$IFDEF FPC}
-  Property DatabaseCharSet   : TDatabaseCharSet Read vDatabaseCharSet Write vDatabaseCharSet;
+  Property DatabaseCharSet     : TDatabaseCharSet     Read vDatabaseCharSet     Write vDatabaseCharSet;
  {$ENDIF}
-  Property CommitRecords     : Integer          Read vCommitRecords   Write vCommitRecords;
+  Property CommitRecords       : Integer              Read vCommitRecords       Write vCommitRecords;
+  Property OnPrepareConnection : TOnPrepareConnection Read vOnPrepareConnection Write vOnPrepareConnection;
 End;
 
 //PoolerDB Control
@@ -680,6 +696,7 @@ End;
 
 implementation
 
+Uses uDWJSONInterface;
 
 Function GetDWParams(Params : TParams; Encondig : TEncodeSelect) : TDWParams;
 Var
@@ -1134,6 +1151,7 @@ Begin
                                                  DWParams,     Error,
                                                  MessageError, vTimeOut,
                                                  vLogin,       vPassword,
+                                                 vClientConnectionDefs.vConnectionDefs,
                                                  RESTClientPooler);
   If Params.Count > 0 Then
    If DWParams <> Nil Then
@@ -1243,14 +1261,16 @@ Begin
     LDataSetList := vRESTConnectionDB.InsertValue(vRestPooler,
                                                   vRestURL, GetLineSQL(SQL),
                                                   DWParams, Error,
-                                                  MessageError, vTimeOut, vLogin, vPassword, RESTClientPooler);
+                                                  MessageError, vTimeOut, vLogin, vPassword,
+                                                  vClientConnectionDefs.vConnectionDefs, RESTClientPooler);
     FreeAndNil(DWParams);
    End
   Else
    LDataSetList := vRESTConnectionDB.InsertValuePure (vRestPooler,
                                                       vRestURL,
                                                       GetLineSQL(SQL), Error,
-                                                      MessageError, vTimeOut, vLogin, vPassword, RESTClientPooler);
+                                                      MessageError, vTimeOut, vLogin, vPassword,
+                                                      vClientConnectionDefs.vConnectionDefs, RESTClientPooler);
   If (LDataSetList <> -1) Then
    Begin
 //    If Not Assigned(Result) Then //Correção fornecida por romyllldo no Forum
@@ -1292,6 +1312,13 @@ Begin
  FreeAndNil(vRESTConnectionDB);
  FreeAndNil(LDataSetList);
 End;
+
+procedure TRESTDWDataBase.Loaded;
+begin
+  inherited Loaded;
+  if not (csDesigning in ComponentState) then
+    SetConnection(False);
+end;
 
 Procedure TRESTDWDataBase.Open;
 Begin
@@ -1349,7 +1376,7 @@ Begin
  Try
   vLinesDS := vRESTConnectionDB.OpenDatasets(vLinesDS, vRestPooler,  vRestModule,
                                              Error,    MessageError, vTimeOut,
-                                             vLogin,   vPassword);
+                                             vLogin,   vPassword, vClientConnectionDefs.vConnectionDefs);
   If Not Error Then
    Begin
     JSONValue := TJSONValue.Create;
@@ -1474,14 +1501,16 @@ Begin
     LDataSetList := vRESTConnectionDB.ExecuteCommandJSON(vRestPooler,
                                                          vRestURL, GetLineSQL(SQL),
                                                          DWParams, Error,
-                                                         MessageError, Execute, vTimeOut, vLogin, vPassword, RESTClientPooler);
+                                                         MessageError, Execute, vTimeOut, vLogin, vPassword,
+                                                         vClientConnectionDefs.vConnectionDefs, RESTClientPooler);
     FreeAndNil(DWParams);
    End
   Else
    LDataSetList := vRESTConnectionDB.ExecuteCommandPureJSON(vRestPooler,
                                                             vRestURL,
                                                             GetLineSQL(SQL), Error,
-                                                            MessageError, Execute, vTimeOut, vLogin, vPassword, RESTClientPooler);
+                                                            MessageError, Execute, vTimeOut, vLogin, vPassword,
+                                                            vClientConnectionDefs.vConnectionDefs, RESTClientPooler);
 
   If (LDataSetList <> Nil) Then
    Begin
@@ -1575,6 +1604,39 @@ Begin
  End;
 End;
 
+Function TRESTDWDataBase.GetServerEvents : TStringList;
+Var
+ vTempList   : TStringList;
+ vConnection : TDWPoolerMethodClient;
+ I           : Integer;
+Begin
+ vConnection                := TDWPoolerMethodClient.Create(Nil);
+ vConnection.WelcomeMessage := vWelcomeMessage;
+ vConnection.Host           := vRestWebService;
+ vConnection.Port           := vPoolerPort;
+ vConnection.Compression    := vCompression;
+ vConnection.TypeRequest    := VtypeRequest;
+ vConnection.AccessTag      := vAccessTag;
+ Result := TStringList.Create;
+ Try
+  vTempList := vConnection.GetServerEvents(vRestURL, vTimeOut, vLogin, vPassword);
+  Try
+    For I := 0 To vTempList.Count -1 do
+     Result.Add(vTempList[I]);
+    If Assigned(vOnEventConnection) Then
+     vOnEventConnection(True, 'GetServerEvents Ok');
+  Finally
+   vTempList.Free;
+  End;
+ Except
+  On E : Exception do
+   Begin
+    if Assigned(vOnEventConnection) then
+     vOnEventConnection(False, E.Message);
+   End;
+ End;
+End;
+
 Function TRESTDWDataBase.GetStateDB: Boolean;
 Begin
  Result := vConnected;
@@ -1606,6 +1668,7 @@ Begin
  vEncodeStrings            := True;
  vProxyOptions             := TProxyOptions.Create;
  vAutoCheckData            := TAutoCheckData.Create;
+ vClientConnectionDefs     := TClientConnectionDefs.Create;
  vAutoCheckData.vAutoCheck := False;
  vAutoCheckData.vInTime    := 1000;
  vTimeOut                  := 10000;
@@ -1641,6 +1704,7 @@ Begin
  vAutoCheckData.vAutoCheck := False;
  FreeAndNil(vProxyOptions);
  FreeAndNil(vAutoCheckData);
+ FreeAndNil(vClientConnectionDefs);
  Inherited;
 End;
 
@@ -1683,7 +1747,8 @@ Begin
      Try
       vRESTConnectionDB.ApplyUpdates_MassiveCache(vUpdateLine, vRestPooler,  vRestModule,
                                                   Error,       MessageError, vTimeOut,
-                                                  vLogin,      vPassword);
+                                                  vLogin,      vPassword,
+                                                  vClientConnectionDefs.vConnectionDefs);
 //      If Not Error Then
      Finally
       MassiveCache.Clear;
@@ -1840,10 +1905,7 @@ End;
 
 procedure TRESTDWClientSQL.SetInBlockEvents(const Value: Boolean);
 begin
-{$IFDEF  UP_BARBOSA1}
-  ProcInBlockEvents(Value);
-{$ENDIF}
-  vInBlockEvents:=Value;
+ vInBlockEvents:=Value;
 end;
 
 procedure TRESTDWClientSQL.SetInDesignEvents(const Value: Boolean);
@@ -2373,15 +2435,6 @@ Begin
   End;
 End;
 
-{$IFDEF  UP_BARBOSA1}
-procedure TRESTDWClientSQL.ProcInBlockEvents(const BlockEvent: Boolean);
-begin
-  if Assigned(vOnInBlockEvent) then
-    vOnInBlockEvent(Self,BlockEvent);
-end;
-{$ENDIF}
-
-
 procedure TRESTDWClientSQL.ProcNewRecord(DataSet: TDataSet);
 begin
  If Not vInBlockEvents Then
@@ -2731,7 +2784,7 @@ Begin
  Result := -1;
  Try
   If vRESTDataBase <> Nil Then
-   Result := vRESTDataBase.InsertMySQLReturnID(vSQL, vParams, vError, vMessageError, Nil)
+   Result := vRESTDataBase.InsertMySQLReturnID(vSQL, vParams, vError, vMessageError,  Nil)
   Else 
    Raise Exception.Create(PChar('Empty Database Property')); 
  Except
@@ -3028,6 +3081,13 @@ End;
 procedure TRESTDWClientSQL.Loaded;
 Begin
  Inherited Loaded;
+  try
+    if not (csDesigning in ComponentState) then
+      SetActiveDB(False);
+  except
+    if not (csDesigning in ComponentState) then
+      raise;
+  end;
 End;
 
 procedure TRESTDWClientSQL.LoadFromStream(Stream: TRESTDWClientSQLBase);
@@ -3268,7 +3328,33 @@ Begin
   End;
 End;
 
-function TRESTDWClientSQL.GetData(DataSet: TJSONValue): Boolean;
+Function TRESTDWClientSQL.OpenJson(JsonValue : String = '') : Boolean;
+Var
+ LDataSetList  : TJSONValue;
+ vMessageError : String;
+Begin
+ Result       := False;
+ LDataSetList := Nil;
+ Self.Close;
+ If Assigned(vDWResponseTranslator) Then
+  Begin
+   If JsonValue <> '' Then
+    Begin
+     LDataSetList          := TJSONValue.Create;
+     LDataSetList.Encoded  := False;
+     LDataSetList.Encoding := esUtf8;
+     Try
+      LDataSetList.WriteToDataset(JsonValue, Self, vDWResponseTranslator, rtJSONAll);
+      Result := True;
+     Except
+     End;
+    End;
+   If (LDataSetList <> Nil) Then
+    FreeAndNil(LDataSetList);
+  End;
+End;
+
+Function TRESTDWClientSQL.GetData(DataSet: TJSONValue): Boolean;
 Var
  LDataSetList  : TJSONValue;
  vError        : Boolean;
@@ -3288,7 +3374,7 @@ Begin
      LDataSetList.Encoding := vDWResponseTranslator.ClientREST.RequestCharset;
     Try
      vValue := vDWResponseTranslator.Open(vDWResponseTranslator.RequestOpen,
-                                         vDWResponseTranslator.RequestOpenUrl);
+                                          vDWResponseTranslator.RequestOpenUrl);
     Except
      Self.Close;
     End;
@@ -3559,9 +3645,11 @@ Begin
    vInDesignEvents := False;
    vActive := False;
    Close;
-   If Value Then
-    If vRESTDataBase = Nil Then
-     Raise Exception.Create(PChar('Empty Database Property'));
+   //Magno
+   if not (csLoading in ComponentState) and not (csReading in ComponentState) then
+     If Value Then
+       If vRESTDataBase = Nil Then
+         Raise Exception.Create(PChar('Empty Database Property'));
   End;
 End;
 
@@ -3603,6 +3691,39 @@ procedure TRESTDWStoredProc.SetDataBase(const Value: TRESTDWDataBase);
 begin
  vRESTDataBase := Value;
 end;
+
+Procedure TClientConnectionDefs.SetConnectionDefs(Value : TConnectionDefs);
+Begin
+ If vActive Then
+  vConnectionDefs := Value;
+End;
+
+Constructor TClientConnectionDefs.Create;
+Begin
+ vActive := False;
+End;
+
+Destructor TClientConnectionDefs.Destroy;
+Begin
+ If Assigned(vConnectionDefs) Then
+  FreeAndNil(vConnectionDefs);
+ Inherited;
+End;
+
+Procedure TClientConnectionDefs.SetClientConnectionDefs(Value : Boolean);
+Begin
+ Case Value Of
+  True  : Begin
+           If Not Assigned(vConnectionDefs) Then
+            vConnectionDefs := TConnectionDefs.Create;
+          End;
+  False : Begin
+           If Assigned(vConnectionDefs) Then
+            FreeAndNil(vConnectionDefs);
+          End;
+ End;
+ vActive := Value;
+End;
 
 Procedure TRESTDWDataBase.SetMyIp(Value: String);
 Begin

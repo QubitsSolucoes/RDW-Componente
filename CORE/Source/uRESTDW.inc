@@ -1,5 +1,5 @@
 ﻿{$IFNDEF FPC}
- {$if CompilerVersion > 21} // Delphi 2010 pra cima
+ {$if CompilerVersion > 24} // Delphi 2010 pra cima
   {$LEGACYIFEND ON}
  {$IFEND}
 {$ENDIF}

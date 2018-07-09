@@ -804,7 +804,12 @@ Begin
    SetHeaders(vTempHeaders);
    If Not Assigned(AResponse) Then
     Begin
-     HttpRequest.Patch(AUrl, AContent, atempResponse);
+     {$IFNDEF FPC}{$IF (CompilerVersion = 23) OR (CompilerVersion = 24)}
+     //TODO
+     {$ELSE}
+      HttpRequest.Patch(AUrl, AContent, atempResponse);
+     {$IFEND}
+     {$ENDIF}
      atempResponse.Position := 0;
      If vRSCharset = esUtf8 Then
       tempResponse.WriteString(utf8Decode(atempResponse.DataString))
@@ -818,7 +823,12 @@ Begin
     End
    Else
     Begin
-     HttpRequest.Patch(AUrl, AContent, atempResponse);
+     {$IFNDEF FPC}{$IF (CompilerVersion = 23) OR (CompilerVersion = 24)}
+     //TODO
+     {$ELSE}
+      HttpRequest.Patch(AUrl, AContent, atempResponse);
+     {$IFEND}
+     {$ENDIF}
      atempResponse.Position := 0;
      If vRSCharset = esUtf8 Then
       AResponse.WriteString(utf8Decode(atempResponse.DataString))
