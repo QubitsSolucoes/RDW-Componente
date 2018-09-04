@@ -80,6 +80,7 @@ procedure TForm1.bServerTimeClick(Sender: TObject);
 Var
  dwParams      : TDWParams;
  vErrorMessage : String;
+ vResult       : Boolean;
 begin
  RESTClientPooler1.Host            := edtip.Text;
  RESTClientPooler1.Port            := StrToInt(edtporta.Text);
@@ -89,6 +90,7 @@ begin
 // RESTClientPooler1.AccessTag       := eAccesstag.Text;
 // RESTClientPooler1.WelcomeMessage  := eWelcomemessage.Text;
  RESTClientPooler1.TypeRequest := TTyperequest.trHttp;
+ vResult := DWClientEvents1.GetEvents;
  DWClientEvents1.CreateDWParams('servertime', dwParams);
  dwParams.ItemsString['inputdata'].AsString := 'teste de string';
  DWClientEvents1.SendEvent('servertime', dwParams, vErrorMessage);

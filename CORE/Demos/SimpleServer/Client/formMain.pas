@@ -29,7 +29,7 @@ USES
   IdComponent, FireDAC.Stan.Intf, FireDAC.Stan.Option, FireDAC.Stan.Param,
   FireDAC.Stan.Error, FireDAC.DatS, FireDAC.Phys.Intf, FireDAC.DApt.Intf,
   FireDAC.Comp.DataSet, FireDAC.Comp.Client, uDWConstsData, System.Actions,
-  Vcl.ActnList, uRESTDWServerEvents, uDWDataset, uDWAbout;
+  Vcl.ActnList, uRESTDWServerEvents, uDWDataset, uDWAbout, Vcl.Buttons, Vcl.Imaging.jpeg;
 
 TYPE
 
@@ -38,73 +38,74 @@ TYPE
   TForm2 = CLASS(TForm)
     EHost: TEdit;
     EPort: TEdit;
-    Label4: TLabel;
-    Label5: TLabel;
+    labHost: TLabel;
+    labPorta: TLabel;
     DataSource1: TDataSource;
-    Image1: TImage;
-    Bevel1: TBevel;
-    Label7: TLabel;
     EdPasswordDW: TEdit;
-    Label6: TLabel;
+    labSenha: TLabel;
     EdUserNameDW: TEdit;
-    Label8: TLabel;
-    Bevel2: TBevel;
-    Label1: TLabel;
-    Bevel3: TBevel;
-    Label2: TLabel;
+    labUsuario: TLabel;
+    labResult: TLabel;
     DBGrid1: TDBGrid;
     MComando: TMemo;
-    Button1: TButton;
-    CheckBox1: TCheckBox;
+    btnOpen: TButton;
+    cbxCompressao: TCheckBox;
     RESTDWClientSQL1: TRESTDWClientSQL;
     RESTDWDataBase1: TRESTDWDataBase;
-    Button2: TButton;
+    btnExecute: TButton;
     ProgressBar1: TProgressBar;
-    Button3: TButton;
+    btnGet: TButton;
     StatusBar1: TStatusBar;
     Memo1: TMemo;
-    Button4: TButton;
+    btnApply: TButton;
     chkhttps: TCheckBox;
-    Button5: TButton;
+    btnMassive: TButton;
     ActionList1: TActionList;
     DWClientEvents1: TDWClientEvents;
     RESTClientPooler1: TRESTClientPooler;
-    Button6: TButton;
+    btnServerTime: TButton;
     eAccesstag: TEdit;
-    Label3: TLabel;
+    labAcesso: TLabel;
     eWelcomemessage: TEdit;
-    Label9: TLabel;
+    labWelcome: TLabel;
     DWClientEvents2: TDWClientEvents;
-    RESTDWClientSQL1EMP_NO: TSmallintField;
-    RESTDWClientSQL1FIRST_NAME: TStringField;
-    RESTDWClientSQL1LAST_NAME: TStringField;
-    RESTDWClientSQL1PHONE_EXT: TStringField;
-    RESTDWClientSQL1HIRE_DATE: TSQLTimeStampField;
-    RESTDWClientSQL1DEPT_NO: TStringField;
-    RESTDWClientSQL1JOB_CODE: TStringField;
-    RESTDWClientSQL1JOB_GRADE: TSmallintField;
-    RESTDWClientSQL1JOB_COUNTRY: TStringField;
-    RESTDWClientSQL1SALARY: TFloatField;
-    RESTDWClientSQL1FULL_NAME: TStringField;
-    PROCEDURE Button1Click(Sender: TObject);
-    PROCEDURE Button2Click(Sender: TObject);
+    labExtras: TLabel;
+    paTopo: TPanel;
+    labSistema: TLabel;
+    labSql: TLabel;
+    labRepsonse: TLabel;
+    labConexao: TLabel;
+    paPortugues: TPanel;
+    Image3: TImage;
+    paEspanhol: TPanel;
+    Image4: TImage;
+    paIngles: TPanel;
+    Image2: TImage;
+    Image1: TImage;
+    labVersao: TLabel;
+    PROCEDURE btnOpenClick(Sender: TObject);
+    PROCEDURE btnExecuteClick(Sender: TObject);
     PROCEDURE RESTDWDataBase1WorkBegin(ASender: TObject; AWorkMode: TWorkMode; AWorkCountMax: Int64);
     PROCEDURE RESTDWDataBase1Work(ASender: TObject; AWorkMode: TWorkMode; AWorkCount: Int64);
     PROCEDURE RESTDWDataBase1WorkEnd(ASender: TObject; AWorkMode: TWorkMode);
-    PROCEDURE RESTDWClientSQL1GetDataError(Sucess: Boolean; CONST Error: STRING);
     PROCEDURE RESTDWDataBase1Status(ASender: TObject; CONST AStatus: TIdStatus; CONST AStatusText: STRING);
     PROCEDURE FormCreate(Sender: TObject);
     PROCEDURE RESTDWDataBase1Connection(Sucess: Boolean; CONST Error: STRING);
     PROCEDURE RESTDWDataBase1BeforeConnect(Sender: TComponent);
-    procedure Button4Click(Sender: TObject);
-    procedure Button5Click(Sender: TObject);
-    procedure Button6Click(Sender: TObject);
-    procedure Button3Click(Sender: TObject);
+    procedure btnApplyClick(Sender: TObject);
+    procedure btnMassiveClick(Sender: TObject);
+    procedure btnServerTimeClick(Sender: TObject);
+    procedure btnGetClick(Sender: TObject);
+    procedure Image3Click(Sender: TObject);
+    procedure Image4Click(Sender: TObject);
+    procedure Image2Click(Sender: TObject);
   PRIVATE
     { Private declarations }
     FBytesToTransfer: Int64;
   PUBLIC
     { Public declarations }
+
+    procedure Locale_Portugues( pLocale : String );
   END;
 
 VAR
@@ -114,7 +115,7 @@ IMPLEMENTATION
 
 {$R *.dfm}
 
-PROCEDURE TForm2.Button1Click(Sender: TObject);
+PROCEDURE TForm2.btnOpenClick(Sender: TObject);
 VAR
   INICIO: TdateTime;
   FIM: TdateTime;
@@ -124,7 +125,7 @@ BEGIN
   RESTDWDataBase1.PoolerPort     := StrToInt(EPort.Text);
   RESTDWDataBase1.Login          := EdUserNameDW.Text;
   RESTDWDataBase1.Password       := EdPasswordDW.Text;
-  RESTDWDataBase1.Compression    := CheckBox1.Checked;
+  RESTDWDataBase1.Compression    := cbxCompressao.Checked;
   RESTDWDataBase1.AccessTag      := eAccesstag.Text;
   RESTDWDataBase1.WelcomeMessage := eWelcomemessage.Text;
   if chkhttps.Checked then
@@ -150,7 +151,7 @@ BEGIN
    Showmessage(IntToStr(RESTDWClientSQL1.Recordcount) + ' registro(s) recebido(s) em ' + IntToStr(SecondsBetween(FIM, INICIO)) + ' segundos.');
 END;
 
-PROCEDURE TForm2.Button2Click(Sender: TObject);
+PROCEDURE TForm2.btnExecuteClick(Sender: TObject);
 VAR
   VError: STRING;
 BEGIN
@@ -159,7 +160,7 @@ BEGIN
   RESTDWDataBase1.PoolerPort    := StrToInt(EPort.Text);
   RESTDWDataBase1.Login         := EdUserNameDW.Text;
   RESTDWDataBase1.Password      := EdPasswordDW.Text;
-  RESTDWDataBase1.Compression   := CheckBox1.Checked;
+  RESTDWDataBase1.Compression   := cbxCompressao.Checked;
   RESTDWDataBase1.AccessTag     := eAccesstag.Text;
   RESTDWDataBase1.WelcomeMessage := eWelcomemessage.Text;
   if chkhttps.Checked then
@@ -176,7 +177,7 @@ BEGIN
     Application.MessageBox('Comando executado com sucesso...', 'Informação !!!', Mb_iconinformation + Mb_ok);
 END;
 
-procedure TForm2.Button3Click(Sender: TObject);
+procedure TForm2.btnGetClick(Sender: TObject);
 Var
  dwParams      : TDWParams;
  vErrorMessage,
@@ -186,7 +187,7 @@ begin
  RESTClientPooler1.Port            := StrToInt(EPort.Text);
  RESTClientPooler1.UserName        := EdUserNameDW.Text;
  RESTClientPooler1.Password        := EdPasswordDW.Text;
- RESTClientPooler1.DataCompression := CheckBox1.Checked;
+ RESTClientPooler1.DataCompression := cbxCompressao.Checked;
  RESTClientPooler1.AccessTag       := eAccesstag.Text;
  RESTClientPooler1.WelcomeMessage  := eWelcomemessage.Text;
  If chkhttps.Checked then
@@ -202,7 +203,7 @@ begin
  dwParams.Free;
 end;
 
-procedure TForm2.Button4Click(Sender: TObject);
+procedure TForm2.btnApplyClick(Sender: TObject);
 Var
  vError : String;
 begin
@@ -210,13 +211,13 @@ begin
   MessageDlg(vError, TMsgDlgType.mtError, [TMsgDlgBtn.mbOK], 0);
 end;
 
-procedure TForm2.Button5Click(Sender: TObject);
+procedure TForm2.btnMassiveClick(Sender: TObject);
 begin
  If RESTDWClientSQL1.MassiveCount > 0 Then
   Showmessage(RESTDWClientSQL1.MassiveToJSON);
 end;
 
-procedure TForm2.Button6Click(Sender: TObject);
+procedure TForm2.btnServerTimeClick(Sender: TObject);
 Var
  dwParams      : TDWParams;
  vErrorMessage : String;
@@ -225,7 +226,7 @@ begin
  RESTClientPooler1.Port            := StrToInt(EPort.Text);
  RESTClientPooler1.UserName        := EdUserNameDW.Text;
  RESTClientPooler1.Password        := EdPasswordDW.Text;
- RESTClientPooler1.DataCompression := CheckBox1.Checked;
+ RESTClientPooler1.DataCompression := cbxCompressao.Checked;
  RESTClientPooler1.AccessTag       := eAccesstag.Text;
  RESTClientPooler1.WelcomeMessage  := eWelcomemessage.Text;
  If chkhttps.Checked then
@@ -251,12 +252,74 @@ end;
 PROCEDURE TForm2.FormCreate(Sender: TObject);
 BEGIN
   Memo1.Lines.Clear;
+
+  labVersao.Caption := uDWConsts.DWVERSAO;
+
 END;
 
-PROCEDURE TForm2.RESTDWClientSQL1GetDataError(Sucess: Boolean; CONST Error: STRING);
-BEGIN
-  Showmessage(Error);
-END;
+procedure TForm2.Image2Click(Sender: TObject);
+begin
+     Locale_Portugues( 'ingles' );
+end;
+
+procedure TForm2.Image3Click(Sender: TObject);
+begin
+     Locale_Portugues( 'portugues' );
+end;
+
+procedure TForm2.Image4Click(Sender: TObject);
+begin
+     Locale_Portugues( 'espanhol' );
+end;
+
+procedure TForm2.Locale_Portugues( pLocale : String );
+begin
+
+     if pLocale = 'portugues' then
+     begin
+        paPortugues.Color   := clWhite;
+        paEspanhol.Color    := $002a2a2a;
+        paIngles.Color      := $002a2a2a;
+
+        labConexao.Caption  := ' .: CONFIGURAÇÃO DO SERVIDOR';
+        labSql.Caption      := ' .: COMANDO SQL';
+        labRepsonse.Caption := ' .: RESPOSTA DO SERVIDOR';
+        labResult.Caption   := ' .: RESULTADO DA CONSULTA SQL';
+
+        cbxCompressao.Caption := 'Compressão';
+     end
+     else
+     if pLocale = 'ingles' then
+     begin
+        paPortugues.Color   := $002a2a2a;
+        paEspanhol.Color    := $002a2a2a;
+        paIngles.Color      := clWhite;
+
+        labConexao.Caption  := ' .: SQL COMMAND';
+        labSql.Caption      := ' .: SERVER CONFIGURATION';
+        labRepsonse.Caption := ' .: SQL QUERY RESULT';
+        labResult.Caption   := ' .: SQL QUERY RESULT';
+
+        cbxCompressao.Caption := 'Compresión';
+     end
+     else
+     if pLocale = 'espanhol' then
+     begin
+        paPortugues.Color   := $002a2a2a;
+        paEspanhol.Color    := clWhite;
+        paIngles.Color      := $002a2a2a;
+
+        labConexao.Caption  := ' .: CONFIGURATIÓN DEL SERVIDOR';
+        labSql.Caption      := ' .: COMANDO SQL';
+        labRepsonse.Caption := ' .: RESPUESTA DEL SERVIDOR';
+        labResult.Caption   := ' .: RESULTADO DE LA CONSULTA DE SQL';
+
+        cbxCompressao.Caption := 'Compressão';
+     end;
+
+
+
+end;
 
 PROCEDURE TForm2.RESTDWDataBase1BeforeConnect(Sender: TComponent);
 BEGIN

@@ -15,13 +15,6 @@ Type
  TMassiveProcess = Procedure(Var MassiveDataset : TMassiveDatasetBuffer; Var Ignore : Boolean) Of Object;
 
 Type
-  TResultErro = Record
-    Status, MessageText: String;
-  End;
-
-  TArguments = Array Of String;
-
-Type
   TServerUtils = Class
     Class Function ParseRESTURL(Const Cmd: String;vEncoding : TEncodeSelect; Var UrlMethod, urlContext : String): TDWParams;
     Class Function Result2JSON(wsResult: TResultErro): String;

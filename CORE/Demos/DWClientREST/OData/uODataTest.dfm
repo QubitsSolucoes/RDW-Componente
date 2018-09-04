@@ -50,11 +50,12 @@ object fODataTest: TfODataTest
     RequestTimeOut = 10000
     AllowCookies = False
     HandleRedirects = False
+    RedirectMaximum = 1
     VerifyCert = False
     AuthOptions.HasAuthentication = False
     AccessControlAllowOrigin = '*'
-    Left = 400
-    Top = 112
+    Left = 272
+    Top = 144
   end
   object DWResponseTranslator1: TDWResponseTranslator
     ElementAutoReadRootIndex = False
@@ -65,8 +66,8 @@ object fODataTest: TfODataTest
     RequestEdit = rtPost
     RequestDelete = rtDelete
     RequestOpenUrl = 
-      'http://services.odata.org/TripPinRESTierService/(S(ajrvp01flke4m' +
-      'gq0jsunxkm3))/People'
+      'https://services.odata.org/TripPinRESTierService/(S(ajrvp01flke4' +
+      'mgq0jsunxkm3))/People'
     FieldDefs = <
       item
         FieldName = 'UserName'

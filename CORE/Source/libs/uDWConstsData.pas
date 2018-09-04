@@ -44,6 +44,15 @@ Type
 End;
 
 Type
+ TResultErro = Record
+  Status,
+  MessageText: String;
+End;
+
+Type
+ TArguments = Array Of String;
+
+Type
  {$IFDEF FPC}
   {$IFDEF LAZDRIVER}
   TRESTDWClientSQLBase   = Class(TMemDataset)                   //Classe com as funcionalidades de um DBQuery
@@ -129,3 +138,4 @@ Begin
 End;
 
 end.
+

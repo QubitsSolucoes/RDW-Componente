@@ -15,6 +15,9 @@
         <Projects Include="..\..\..\Source\Connectors\ZEOS\Package\Berlin\RESTDWDriverZEOS.dproj">
             <Dependencies/>
         </Projects>
+        <Projects Include="..\..\..\Source\htmlViewer\dwpackage\Delphi\D24\DWhtmlEditor.dproj">
+            <Dependencies/>
+        </Projects>
         <Projects Include="..\..\..\Demos\JSONDataset\JSONDatasetSample.dproj">
             <Dependencies/>
         </Projects>
@@ -81,6 +84,12 @@
         <Projects Include="..\..\..\Demos\JSONString\JSONStringSample.dproj">
             <Dependencies/>
         </Projects>
+        <Projects Include="..\..\..\Demos\DWClientREST\ClimaTempoDelphi\ClimaTempoDelphi.dproj">
+            <Dependencies/>
+        </Projects>
+        <Projects Include="..\..\..\Demos\RotasGoogle\DWRotasGoogle.dproj">
+            <Dependencies/>
+        </Projects>
     </ItemGroup>
     <ProjectExtensions>
         <Borland.Personality>Default.Personality.12</Borland.Personality>
@@ -124,6 +133,15 @@
     </Target>
     <Target Name="RESTDWDriverZEOS:Make">
         <MSBuild Projects="..\..\..\Source\Connectors\ZEOS\Package\Berlin\RESTDWDriverZEOS.dproj" Targets="Make"/>
+    </Target>
+    <Target Name="DWhtmlEditor">
+        <MSBuild Projects="..\..\..\Source\htmlViewer\dwpackage\Delphi\D24\DWhtmlEditor.dproj"/>
+    </Target>
+    <Target Name="DWhtmlEditor:Clean">
+        <MSBuild Projects="..\..\..\Source\htmlViewer\dwpackage\Delphi\D24\DWhtmlEditor.dproj" Targets="Clean"/>
+    </Target>
+    <Target Name="DWhtmlEditor:Make">
+        <MSBuild Projects="..\..\..\Source\htmlViewer\dwpackage\Delphi\D24\DWhtmlEditor.dproj" Targets="Make"/>
     </Target>
     <Target Name="JSONDatasetSample">
         <MSBuild Projects="..\..\..\Demos\JSONDataset\JSONDatasetSample.dproj"/>
@@ -323,14 +341,32 @@
     <Target Name="JSONStringSample:Make">
         <MSBuild Projects="..\..\..\Demos\JSONString\JSONStringSample.dproj" Targets="Make"/>
     </Target>
+    <Target Name="ClimaTempoDelphi">
+        <MSBuild Projects="..\..\..\Demos\DWClientREST\ClimaTempoDelphi\ClimaTempoDelphi.dproj"/>
+    </Target>
+    <Target Name="ClimaTempoDelphi:Clean">
+        <MSBuild Projects="..\..\..\Demos\DWClientREST\ClimaTempoDelphi\ClimaTempoDelphi.dproj" Targets="Clean"/>
+    </Target>
+    <Target Name="ClimaTempoDelphi:Make">
+        <MSBuild Projects="..\..\..\Demos\DWClientREST\ClimaTempoDelphi\ClimaTempoDelphi.dproj" Targets="Make"/>
+    </Target>
+    <Target Name="DWRotasGoogle">
+        <MSBuild Projects="..\..\..\Demos\RotasGoogle\DWRotasGoogle.dproj"/>
+    </Target>
+    <Target Name="DWRotasGoogle:Clean">
+        <MSBuild Projects="..\..\..\Demos\RotasGoogle\DWRotasGoogle.dproj" Targets="Clean"/>
+    </Target>
+    <Target Name="DWRotasGoogle:Make">
+        <MSBuild Projects="..\..\..\Demos\RotasGoogle\DWRotasGoogle.dproj" Targets="Make"/>
+    </Target>
     <Target Name="Build">
-        <CallTarget Targets="RestDatawareCORE;RESTDWDriverFD;RESTDWDriverUNIDAC;RESTDWDriverZEOS;JSONDatasetSample;ArrayDatasetProcess;WindowsDWService;dwCGIServer;RestDWServerISAPI;RestDWServerProject;RestDWClientProject;ClientBLOB;ClientSlides;exemplounigui;FileServer;FileClient;FMX_CRUD;MassiveSample;SimpleCRUD;LoadfromJSON;ClienteFMX;getIpSample;ODataTestSample;getBlueCosmos;GetCEP;JSONStringSample"/>
+        <CallTarget Targets="RestDatawareCORE;RESTDWDriverFD;RESTDWDriverUNIDAC;RESTDWDriverZEOS;DWhtmlEditor;JSONDatasetSample;ArrayDatasetProcess;WindowsDWService;dwCGIServer;RestDWServerISAPI;RestDWServerProject;RestDWClientProject;ClientBLOB;ClientSlides;exemplounigui;FileServer;FileClient;FMX_CRUD;MassiveSample;SimpleCRUD;LoadfromJSON;ClienteFMX;getIpSample;ODataTestSample;getBlueCosmos;GetCEP;JSONStringSample;ClimaTempoDelphi;DWRotasGoogle"/>
     </Target>
     <Target Name="Clean">
-        <CallTarget Targets="RestDatawareCORE:Clean;RESTDWDriverFD:Clean;RESTDWDriverUNIDAC:Clean;RESTDWDriverZEOS:Clean;JSONDatasetSample:Clean;ArrayDatasetProcess:Clean;WindowsDWService:Clean;dwCGIServer:Clean;RestDWServerISAPI:Clean;RestDWServerProject:Clean;RestDWClientProject:Clean;ClientBLOB:Clean;ClientSlides:Clean;exemplounigui:Clean;FileServer:Clean;FileClient:Clean;FMX_CRUD:Clean;MassiveSample:Clean;SimpleCRUD:Clean;LoadfromJSON:Clean;ClienteFMX:Clean;getIpSample:Clean;ODataTestSample:Clean;getBlueCosmos:Clean;GetCEP:Clean;JSONStringSample:Clean"/>
+        <CallTarget Targets="RestDatawareCORE:Clean;RESTDWDriverFD:Clean;RESTDWDriverUNIDAC:Clean;RESTDWDriverZEOS:Clean;DWhtmlEditor:Clean;JSONDatasetSample:Clean;ArrayDatasetProcess:Clean;WindowsDWService:Clean;dwCGIServer:Clean;RestDWServerISAPI:Clean;RestDWServerProject:Clean;RestDWClientProject:Clean;ClientBLOB:Clean;ClientSlides:Clean;exemplounigui:Clean;FileServer:Clean;FileClient:Clean;FMX_CRUD:Clean;MassiveSample:Clean;SimpleCRUD:Clean;LoadfromJSON:Clean;ClienteFMX:Clean;getIpSample:Clean;ODataTestSample:Clean;getBlueCosmos:Clean;GetCEP:Clean;JSONStringSample:Clean;ClimaTempoDelphi:Clean;DWRotasGoogle:Clean"/>
     </Target>
     <Target Name="Make">
-        <CallTarget Targets="RestDatawareCORE:Make;RESTDWDriverFD:Make;RESTDWDriverUNIDAC:Make;RESTDWDriverZEOS:Make;JSONDatasetSample:Make;ArrayDatasetProcess:Make;WindowsDWService:Make;dwCGIServer:Make;RestDWServerISAPI:Make;RestDWServerProject:Make;RestDWClientProject:Make;ClientBLOB:Make;ClientSlides:Make;exemplounigui:Make;FileServer:Make;FileClient:Make;FMX_CRUD:Make;MassiveSample:Make;SimpleCRUD:Make;LoadfromJSON:Make;ClienteFMX:Make;getIpSample:Make;ODataTestSample:Make;getBlueCosmos:Make;GetCEP:Make;JSONStringSample:Make"/>
+        <CallTarget Targets="RestDatawareCORE:Make;RESTDWDriverFD:Make;RESTDWDriverUNIDAC:Make;RESTDWDriverZEOS:Make;DWhtmlEditor:Make;JSONDatasetSample:Make;ArrayDatasetProcess:Make;WindowsDWService:Make;dwCGIServer:Make;RestDWServerISAPI:Make;RestDWServerProject:Make;RestDWClientProject:Make;ClientBLOB:Make;ClientSlides:Make;exemplounigui:Make;FileServer:Make;FileClient:Make;FMX_CRUD:Make;MassiveSample:Make;SimpleCRUD:Make;LoadfromJSON:Make;ClienteFMX:Make;getIpSample:Make;ODataTestSample:Make;getBlueCosmos:Make;GetCEP:Make;JSONStringSample:Make;ClimaTempoDelphi:Make;DWRotasGoogle:Make"/>
     </Target>
     <Import Project="$(BDS)\Bin\CodeGear.Group.Targets" Condition="Exists('$(BDS)\Bin\CodeGear.Group.Targets')"/>
 </Project>

@@ -6,7 +6,7 @@ Interface
 
 Uses
     {$IFDEF FPC}
-     SysUtils, DB, Classes, IdGlobal, IdCoderMIME, IdGlobalProtocols, IdMessageCoderMIME, uZlibLaz, base64, uDWConstsData;
+     LCL, SysUtils, DB, Classes, IdGlobal, IdCoderMIME, IdGlobalProtocols, IdMessageCoderMIME, uZlibLaz, base64, uDWConstsData;
     {$ELSE}
      IdGlobal, IdCoderMIME, IdGlobalProtocols, IdMessageCoderMIME,
      {$if CompilerVersion > 24} // Delphi 2010 pra cima
@@ -22,24 +22,12 @@ Uses
     {$ENDIF}
 
 
+Var
+ InitStrPos,
+ FinalStrPos           : Integer;
+
 Const
- {$IFNDEF FPC}
-  {$IFDEF HAS_FMX} //Alteardo para IOS Brito
-    {$IFDEF MACOS}       // Alteracao feito por ICO para MACOSX
-     InitStrPos         = 1;
-     FinalStrPos        = 0;
-    {$ELSE}
-     InitStrPos            = 0;
-     FinalStrPos           = 1;
-    {$ENDIF}
-  {$ELSE}
-   InitStrPos            = 1;
-   FinalStrPos           = 0;
-  {$ENDIF}
- {$ELSE}
- InitStrPos            = 1;
- FinalStrPos           = 0;
- {$ENDIF}
+ tScriptsDetected      : Array[0..1] of string = ('.map', '.webdwpc');
  TDecimalChar          = 'D';
  TSepParams            = '|xxx|xxx|%';
  TValueFormatJSON      = '{"%s":"%s", "%s":"%s", "%s":"%s", "%s":"%s", "%s":[%s]}';
@@ -83,7 +71,7 @@ Const
                         'Components REST DataWare Core' + #13#10 +
                         'CORE Version';
  DWSobreLicencaStatus = 'Open Source - Free Version';
- DWRelease            = '1509';
+ DWRelease            = '1572';
  DWCodeProject        = 'Zillion';
  DWVERSAO             = '1.4.0.' + DWRelease + '(' + DWCodeProject + ')';
 
@@ -173,6 +161,8 @@ Type
                                      JsonModeD          : TJsonMode = jmDataware;
                                      FloatDecimalFormat : String = '')            : String;
  Function  GetMIMEType              (sFile              : TFileName)              : string;
+ Function  Scripttags(Value    : String) : Boolean;
+ Function  DWFileExists(sFile    : String) : Boolean;
 
 Var
  DecimalLocal : Char;
@@ -181,16 +171,68 @@ implementation
 
 Uses uRESTDWPoolerDB, uDWJSONObject, uDWJSONTools;
 
+Function  DWFileExists(sFile    : String) : Boolean;
+Var
+ vTempFilename : String;
+Begin
+ Result        := False;
+ vTempFilename := sFile;
+ Result        := (Pos('.', vTempFilename) > 0);
+ If Result Then
+  Result := FileExists(vTempFilename);
+End;
+
+
 Function GetMIMEType(sFile: TFileName) : string;
 Var
  aMIMEMap : TIdMIMETable;
 Begin
- aMIMEMap:= TIdMIMETable.Create(true);
- Try
-  Result:= aMIMEMap.GetFileMIMEType(sFile);
- Finally
-  aMIMEMap.Free;
- End;
+ If (Pos('.HTML', UpperCase(sFile)) > 0) Then
+  Result := 'text/html'
+ Else If (Pos('.PHP', UpperCase(sFile)) > 0) Then
+  Result := 'text/php'
+ Else If (Pos('.PNG', UpperCase(sFile)) > 0) Then
+  Result := 'image/png'
+ Else If (Pos('.BMP', UpperCase(sFile)) > 0) Then
+  Result := 'image/bmp'
+ Else If (Pos('.ICO', UpperCase(sFile)) > 0) Then
+  Result := 'image/ico'
+ Else If (Pos('.GIF', UpperCase(sFile)) > 0) Then
+  Result := 'image/gif'
+ Else If (Pos('.JPG', UpperCase(sFile)) > 0) Then
+  Result := 'image/jpg'
+ Else If (Pos('.JS',  UpperCase(sFile)) > 0) Then
+  Result := 'application/javascript'
+ Else If (Pos('.PDF', UpperCase(sFile)) > 0) Then
+  Result := 'application/pdf'
+ Else If (Pos('.ZIP', UpperCase(sFile)) > 0) Then
+  Result := 'application/zip'
+ Else If (Pos('.RAR', UpperCase(sFile)) > 0) Then
+  Result := 'application/rar'
+ Else If (Pos('.CSS', UpperCase(sFile)) > 0) Then
+  Result := 'text/css'
+ Else
+  Begin
+   aMIMEMap := TIdMIMETable.Create(true);
+   Try
+    Result := aMIMEMap.GetFileMIMEType(sFile);
+   Finally
+    aMIMEMap.Free;
+   End;
+  End;
+End;
+
+Function scripttags(Value: String): Boolean;
+var
+ I : Integer;
+Begin
+ Result := False;
+ For I := 0 To Length(tScriptsDetected) -1 Do
+  Begin
+   Result := pos(tScriptsDetected[I], value) > 0;
+   If Result Then
+    Break;
+  End;
 End;
 
 Function DateTimeToUnix(ConvDate: TDateTime): Int64;
@@ -283,14 +325,27 @@ End;
 Function ZCompressStr(Const s   : String;
                       Var Value : String) : Boolean;
 Var
- Utf8Stream   : TStringStream;
- Compressed   : TMemoryStream;
+ {$IFDEF FPC}
+  Utf8Stream   : TStringStream;
+ {$ELSE}
+  {$if CompilerVersion > 24} // Delphi 2010 pra cima
+   Utf8Stream   : TStringStream;
+  {$ELSE}
+   Utf8Stream   : TMemoryStream;
+  {$IFEND}
+ {$ENDIF}
+Compressed   : TMemoryStream;
 Begin
  {$IFDEF FPC}
   Result := False;
   Utf8Stream := TStringStream.Create(S);
  {$ELSE}
-  Utf8Stream := TStringStream.Create(S{$if CompilerVersion > 21}, TEncoding.UTF8{$IFEND});
+  {$if CompilerVersion > 24} // Delphi 2010 pra cima
+   Utf8Stream := TStringStream.Create(S{$if CompilerVersion > 21}, TEncoding.UTF8{$IFEND});
+  {$ELSE} // Delphi 2010 pra cima
+   Utf8Stream := TMemoryStream.Create;
+   Utf8Stream.Write(AnsiString(S)[1], Length(AnsiString(S)));
+  {$IFEND} // Delphi 2010 pra cima
  {$ENDIF}
  Try
   Compressed := TMemoryStream.Create;
@@ -342,7 +397,7 @@ Begin
   {$IFDEF FPC}
   Value := TStringStream.Create('');
   {$ELSE}
-  Value := TStringStream.Create(''{$if CompilerVersion > 21}, TEncoding.UTF8{$IFEND});
+  Value := TStringStream.Create(''); //{$if CompilerVersion > 21}, TEncoding.UTF8{$IFEND});
   {$ENDIF}
   Try
    Try
@@ -477,7 +532,7 @@ Begin
  {$ELSE}
    TMemoryStream(Stream).Size := Length(Str) Div 2;
    {$IFDEF FPC}
-   HexToBin(PChar (Str), TMemoryStream(Stream).Memory, TMemoryStream(Stream).Size);
+   HexToBin(PChar(Str), TMemoryStream(Stream).Memory, TMemoryStream(Stream).Size);
    {$ELSE}
     {$IF CompilerVersion > 21} // Delphi 2010 pra cima
     {$IF (NOT Defined(FPC) AND Defined(LINUX))} //Alteardo para Lazarus LINUX Brito
@@ -1339,8 +1394,41 @@ Begin
  Result := StringReplace(Value, TDecimalChar, DecimalLocal, [rfReplaceAll]);
 End;
 
+Procedure InitializeStrings;
+{$IFNDEF FPC}
+ {$if CompilerVersion > 24} // Delphi 2010 pra cima
+ Var
+  s : String;
+ {$IFEND}
+{$ENDIF}
+Begin
+ {$IFNDEF FPC}
+  {$if CompilerVersion > 24} // Delphi 2010 pra cima
+   s := '0';
+   If Low(s) = 0 Then
+    Begin
+     InitStrPos  := 0;
+     FinalStrPos := 1;
+    End
+   Else
+    Begin
+     InitStrPos  := 1;
+     FinalStrPos := 0;
+    End;
+  {$ELSE}
+   InitStrPos  := 1;
+   FinalStrPos := 0;
+  {$IFEND}
+ {$ELSE}
+  InitStrPos  := 1;
+  FinalStrPos := 0;
+ {$ENDIF}
+End;
+
 Initialization
+ InitializeStrings;
 
 Finalization
 
 end.
+

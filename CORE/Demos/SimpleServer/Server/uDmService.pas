@@ -39,7 +39,7 @@ USES
   FireDAC.Phys.MSSQL,
   uDWConsts, uRESTDWServerEvents, uSystemEvents, FireDAC.Stan.Param, FireDAC.DatS,
   FireDAC.DApt.Intf, FireDAC.Comp.DataSet, uDWAbout, FireDAC.Phys.MySQLDef,
-  FireDAC.Phys.MySQL, uRESTDWServerContext;
+  FireDAC.Phys.MySQL, uRESTDWServerContext, FireDAC.Phys.PGDef, FireDAC.Phys.PG;
 
 Const
  WelcomeSample = False;
@@ -58,6 +58,7 @@ TYPE
     FDPhysMySQLDriverLink1: TFDPhysMySQLDriverLink;
     DWServerEvents2: TDWServerEvents;
     DWServerContext1: TDWServerContext;
+    FDPhysPgDriverLink1: TFDPhysPgDriverLink;
     PROCEDURE ServerMethodDataModuleCreate(Sender: TObject);
     PROCEDURE Server_FDConnectionBeforeConnect(Sender: TObject);
     PROCEDURE Server_FDConnectionError(ASender, AInitiator: TObject; VAR AException: Exception);
@@ -91,6 +92,12 @@ TYPE
     procedure DWServerContext1ContextListopenfileReplyRequestStream(
       const Params: TDWParams; var ContentType: string;
       var Result: TMemoryStream);
+    procedure DWServerContext1ContextListphpReplyRequest(
+      const Params: TDWParams; var ContentType, Result: string);
+    procedure DWServerContext1ContextListangularReplyRequest(
+      const Params: TDWParams; var ContentType, Result: string);
+    procedure DWServerContext1ContextListzsendReplyRequest(
+      const Params: TDWParams; var ContentType, Result: string);
   PRIVATE
     { Private declarations }
     vIDVenda : Integer;
@@ -131,13 +138,32 @@ begin
      Result := JSONValue.ToJson;
     End
    Else
-    JSONValue.LoadFromDataset('employee', FDQuery1, False,  Params.JsonMode);
-   Params.ItemsString['result'].AsObject       := JSONValue.ToJSON;
+    Begin
+     JSONValue.LoadFromDataset('employee', FDQuery1, False,  Params.JsonMode);
+     Params.ItemsString['result'].AsObject       := JSONValue.ToJSON;
+    End;
   Except
-
+   On E : Exception Do
+    Begin
+     Result := Format('{"Error":"%s"}', [E.Message]);
+    End;
   End;
  Finally
   JSONValue.Free;
+ End;
+end;
+
+procedure TServerMethodDM.DWServerContext1ContextListangularReplyRequest(
+  const Params: TDWParams; var ContentType, Result: string);
+var
+ s : TStringlist;
+begin
+ s := TStringlist.Create;
+ Try
+  s.LoadFromFile('.\www\dw_angular.html');
+  Result := s.Text;
+ Finally
+  s.Free;
  End;
 end;
 
@@ -213,7 +239,7 @@ begin
                                          '    <img src="http://www.resteasyobjects.com.br/myimages/LogoDW.png" alt="The REST Dataware logo: Powerfull Web Service.">' +
                                          '  ' +
                                          '  ' +
-                                         '    <p>File not Found.</p>' +
+                                         Format('    <p>File "%s" not Found.</p>', [vFileName]) +
                                          '  </body>' +
                                          '</html>');
    Try
@@ -223,6 +249,34 @@ begin
     vStringStream.Free;
    End;
   End;
+end;
+
+procedure TServerMethodDM.DWServerContext1ContextListphpReplyRequest(
+  const Params: TDWParams; var ContentType, Result: string);
+var
+ s : TStringlist;
+begin
+ s := TStringlist.Create;
+ Try
+  s.LoadFromFile('.\www\index_php.html');
+  Result := s.Text;
+ Finally
+  s.Free;
+ End;
+end;
+
+procedure TServerMethodDM.DWServerContext1ContextListzsendReplyRequest(
+  const Params: TDWParams; var ContentType, Result: string);
+var
+ s : TStringlist;
+begin
+ s := TStringlist.Create;
+ Try
+  s.LoadFromFile('.\zenvia\data\envio_simples.php');
+  Result := s.Text;
+ Finally
+  s.Free;
+ End;
 end;
 
 procedure TServerMethodDM.DWServerEvents1EventseventdatetimeReplyEvent(
@@ -252,7 +306,7 @@ End;
 procedure TServerMethodDM.DWServerEvents1EventshelloworldReplyEvent(
   var Params: TDWParams; var Result: string);
 begin
- Result := 'Sou eu ServerEvent1';
+ Result := Format('{"Message":"%s"}', ['Sou eu ServerEvent1']);
 end;
 
 procedure TServerMethodDM.DWServerEvents1EventsloaddataseteventReplyEvent(
@@ -273,7 +327,10 @@ BEGIN
      JSONValue.LoadFromDataset('temp', FDQuery1, True);
      Params.ItemsString['result'].AsString := JSONValue.ToJSON;
     Except
-
+     On E : Exception Do
+      Begin
+       Result := Format('{"Error":"%s"}', [E.Message]);
+      End;
     End;
    Finally
     JSONValue.Free;
@@ -300,7 +357,7 @@ end;
 PROCEDURE TServerMethodDM.ServerMethodDataModuleCreate(Sender: TObject);
 BEGIN
  vConnectFromClient := False;
-  RESTDWPoolerDB1.Active := RestDWForm.CbPoolerState.Checked;
+ RESTDWPoolerDB1.Active := RestDWForm.CbPoolerState.Checked;
 END;
 
 Function TServerMethodDM.GetGenID(GenName  : String): Integer;
@@ -429,6 +486,7 @@ BEGIN
          Database := Pasta_BD + Database;
         End;
     1 : Database := RestDWForm.EdBD.Text;
+    3 : Driver_BD := 'PG';
    End;
    Porta_BD   := RestDWForm.EdPortaBD.Text;
    Usuario_BD := RestDWForm.EdUserNameBD.Text;

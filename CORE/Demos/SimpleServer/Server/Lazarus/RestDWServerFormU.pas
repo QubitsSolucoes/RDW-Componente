@@ -14,6 +14,8 @@ type
   TRestDWForm = class(TForm)
     ButtonStart: TButton;
     ButtonStop: TButton;
+    cbauthentication: TCheckBox;
+    cbForceWelcome: TCheckBox;
     Label8: TLabel;
     Bevel3: TBevel;
     lSeguro: TLabel;
@@ -236,6 +238,14 @@ Begin
  ini.WriteString('SSL',        'PKF',       ePrivKeyFile.Text);
  ini.WriteString('SSL',        'PKP',       ePrivKeyPass.Text);
  ini.WriteString('SSL',        'CF',        eCertFile.Text);
+ If cbForceWelcome.Checked Then
+  Ini.WriteInteger('Configs', 'ForceWelcomeAccess', 1)
+ Else
+  Ini.WriteInteger('Configs', 'ForceWelcomeAccess', 0);
+ If cbauthentication.Checked Then
+  Ini.WriteInteger('Configs', 'HasAuthentication', 1)
+ Else
+  Ini.WriteInteger('Configs', 'HasAuthentication', 0);
  ini.Free;
  vUsername := edUserNameDW.Text;
  vPassword := edPasswordDW.Text;
@@ -340,6 +350,8 @@ Begin
  ePrivKeyFile.Text       := ini.ReadString('SSL',        'PKF',       '');
  ePrivKeyPass.Text       := ini.ReadString('SSL',        'PKP',       '');
  eCertFile.Text          := ini.ReadString('SSL',        'CF',        '');
+ cbForceWelcome.Checked   := Ini.ReadInteger('Configs', 'ForceWelcomeAccess', 0) = 1;
+ cbauthentication.Checked := Ini.ReadInteger('Configs', 'HasAuthentication', 0) = 1;
  ini.Free;
 End;
 
@@ -347,12 +359,14 @@ procedure TRestDWForm.StartServer;
 begin
  If Not RESTServicePooler1.Active Then
   Begin
+   RESTServicePooler1.ServerParams.HasAuthentication := cbauthentication.Checked;
    RESTServicePooler1.ServerParams.UserName := edUserNameDW.Text;
    RESTServicePooler1.ServerParams.Password := edPasswordDW.Text;
    RESTServicePooler1.ServicePort           := StrToInt(edPortaDW.Text);
    RESTServicePooler1.SSLPrivateKeyFile     := ePrivKeyFile.Text;
    RESTServicePooler1.SSLPrivateKeyPassword := ePrivKeyPass.Text;
    RESTServicePooler1.SSLCertFile           := eCertFile.Text;
+   RESTServicePooler1.ForceWelcomeAccess    := cbForceWelcome.Checked;
    RESTServicePooler1.Active                := True;
    If Not RESTServicePooler1.Active Then
     Exit;

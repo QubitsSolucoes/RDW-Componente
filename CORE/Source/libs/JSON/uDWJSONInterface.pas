@@ -6,7 +6,7 @@ interface
 
 Uses
  SysUtils, Classes,{$IFNDEF FPC}{$IF Defined(HAS_FMX)}system.json,{$ELSE}
-                    uDWJSON,{$IFEND}{$ELSE}fpjson, jsonparser,{$ENDIF}Variants;
+                    uDWJSON,{$IFEND}{$ELSE}uDWJSON,{$ENDIF}Variants;  //fpjson, jsonparser
 
 Type
  TElementType = (etObject, etArray, etString, etNumeric, etBoolean);
@@ -147,7 +147,8 @@ Begin
    Result.vJSONObject := TJSONBaseClass(JSONObject.getJSONArray(key));
   {$IFEND}
  {$ELSE}
-  Result.vJSONObject := TJSONBaseClass(TJSONObject(JSONObject).Arrays[key]);
+  Result.vJSONObject := TJSONBaseClass(JSONObject.getJSONArray(key));
+//  Result.vJSONObject := TJSONBaseClass(TJSONObject(JSONObject).Arrays[key]);
  {$ENDIF}
 End;
 
@@ -182,9 +183,15 @@ Begin
   {$IFEND}
  {$ELSE}
   If TJSONObject(JSONObject).classname = 'TJSONObject' Then
+   Result.vJSONObject := TJSONBaseClass(TJSONObject(vJSONObject).opt(TJSONObject(vJSONObject).names.get(Index).toString))
+  Else If TJSONObject(JSONObject).classname = 'TJSONArray' Then
+   Result.vJSONObject := TJSONBaseClass(TJSONArray(vJSONObject).get(Index));
+ {
+  If TJSONObject(JSONObject).classname = 'TJSONObject' Then
    Result.vJSONObject := TJSONBaseClass(TJSONObject(vJSONObject).Items[Index].toString)
   Else If TJSONObject(JSONObject).classname = 'TJSONArray' Then
    Result.vJSONObject := TJSONBaseClass(TJSONArray(vJSONObject).Items[Index]);
+ }
  {$ENDIF}
 End;
 
@@ -211,9 +218,15 @@ Begin
   {$IFEND}
  {$ELSE}
  If TJSONObject(vJSONObject).classname = 'TJSONObject' Then
+  Result := TJSONObject(vJSONObject).names.length
+ Else
+  Result := TJSONArray(vJSONObject).length;
+{
+ If TJSONObject(vJSONObject).classname = 'TJSONObject' Then
     Result := TJSONObject(vJSONObject).Count
   Else
    Result := TJSONArray(vJSONObject).Count;
+}
  {$ENDIF}
 End;
 
@@ -241,6 +254,10 @@ Begin
       Result.vJSONObject := TJSONBaseClass(TJSONArray(vJSONObject).opt(Index));
     {$IFEND}
    {$ELSE}
+    Result.vJSONObject := TJSONBaseClass(TJSONArray(vJSONObject).optJSONArray(Index));
+    If Result.vJSONObject = Nil then
+     Result.vJSONObject := TJSONBaseClass(TJSONArray(vJSONObject).opt(Index));
+{
     If TJSONArray(vJSONObject).Count > 0 Then
      Begin
       Result.vJSONObject := Nil;
@@ -254,6 +271,7 @@ Begin
       Else
        Result.vJSONObject := TJSONBaseClass(TJSONNull(TJSONObject(vJSONObject).Items[index]));
      End;
+}
    {$ENDIF}
   End
  Else If (UpperCase(TJSONObject(vJSONObject).ClassName) = UpperCase('TJSONObject')) Then
@@ -265,7 +283,8 @@ Begin
      Result.vJSONObject := TJSONBaseClass(TJSONObject(vJSONObject).opt(TJSONObject(vJSONObject).names.get(Index).toString));
     {$IFEND}
    {$ELSE}
-    Result.vJSONObject := TJSONBaseClass(TJSONObject(vJSONObject).Items[Index]);
+    Result.vJSONObject := TJSONBaseClass(TJSONObject(vJSONObject).opt(TJSONObject(vJSONObject).names.get(Index).toString));
+//    Result.vJSONObject := TJSONBaseClass(TJSONObject(vJSONObject).Items[Index]);
    {$ENDIF}
   End
  Else
@@ -278,10 +297,10 @@ Begin
 End;
 
 Constructor TDWJSONObject.Create(JSONValue : String);
-{$IFDEF FPC}
-Var
- JSONData : TJSONData;
-{$ENDIF}
+//{$IFDEF FPC}
+//Var
+// JSONData : TJSONData;
+//{$ENDIF}
 Begin
  Inherited Create;
  If JSONValue <> '' Then
@@ -299,11 +318,17 @@ Begin
       vJSONObject := TJSONBaseClass(TJSONObject.Create(JSONValue));
     {$IFEND}
    {$ELSE}
+   If JSONValue[InitStrPos] = '[' then
+    vJSONObject := TJSONBaseClass(TJSONArray.Create(JSONValue))
+   Else
+    vJSONObject := TJSONBaseClass(TJSONObject.Create(JSONValue));
+{
     JSONData := GetJSON(JSONValue);
     If JSONValue[InitStrPos] = '[' then
      vJSONObject := TJSONBaseClass(TJSONArray(JSONData))
     Else
      vJSONObject := TJSONBaseClass(TJSONObject(JSONData));
+}
    {$ENDIF}
   End;
 End;
@@ -334,7 +359,10 @@ Begin
        If (TJSONObject(vJSONObject).Count > index) Then
         Begin
          Result.Name      := removestr(TJSONObject(vJSONObject).Pairs[index].JsonString.Value, '"');
-         Result.Value     := TJSONObject(vJSONObject).Pairs[index].JsonValue.Value;//removestr(TJSONObject(vJSONObject).Pairs[index].JsonValue.tostring, '"');
+         If TJSONObject(vJSONObject).Pairs[index].JsonValue is TJSONObject Then
+          Result.Value := TJSONObject(vJSONObject).Pairs[index].JsonValue.ToString //removestr(TJSONObject(vJSONObject).Pairs[index].JsonValue.tostring, '"');
+         Else
+          Result.Value := TJSONObject(vJSONObject).Pairs[index].JsonValue.Value;
         End;
       End
      Else
@@ -384,6 +412,35 @@ Begin
     Result.Value       := TJSONObject(vJSONObject).toString;
   {$IFEND}
  {$ELSE}
+ If (UpperCase(vClassName) = UpperCase('TDWJSONObject')) Or
+    (UpperCase(vClassName) = UpperCase('TJSONObject'))   Or
+    (UpperCase(vClassName) = UpperCase('TDWJSONBase'))  Then
+  Begin
+   If vClassName <> '_String' Then
+    Begin
+     If TJSONObject(vJSONObject).names.length > 0 Then
+      Begin
+       If (TJSONObject(vJSONObject).names.length > index) Then
+        Begin
+         Result.Name        := TJSONObject(vJSONObject).names.get(index).toString;
+         Result.Value       := TJSONObject(vJSONObject).get(Result.Name).toString;
+        End;
+      End
+     Else
+      Result.Value       := TJSONObject(vJSONObject).toString;
+    End
+   Else
+    Result.Value       := TJSONObject(vJSONObject).toString;
+  End
+ Else If UpperCase(vClassName) = UpperCase('TJSONArray') Then
+  Begin
+   Result.Name        := TJSONArray(vJSONObject).get(Index).toString;
+   Result.Value       := TJSONArray(vJSONObject).opt(Index).toString;
+  End
+ Else
+  Result.Value       := TJSONObject(vJSONObject).toString;
+
+{
   If (UpperCase(vClassName) = UpperCase('TDWJSONObject')) Or
      (UpperCase(vClassName) = UpperCase('TJSONObject'))   Or
      (UpperCase(vClassName) = UpperCase('TDWJSONBase'))  Then
@@ -420,6 +477,7 @@ Begin
    End
   Else
    Result.Value       := TJSONObject(vJSONObject).Value;
+}
  {$ENDIF}
 End;
 
@@ -435,10 +493,16 @@ Begin
     Result := TJSONArray(vJSONObject).length;
   {$IFEND}
  {$ELSE}
+ If TJSONObject(vJSONObject).classname = 'TJSONObject' Then
+  Result := TJSONObject(vJSONObject).names.length
+ Else
+  Result := TJSONArray(vJSONObject).length;
+{
   If TJSONObject(vJSONObject).classname = 'TJSONObject' Then
    Result := TJSONObject(vJSONObject).Count
   Else
    Result := TJSONArray(vJSONObject).Count;
+}
  {$ENDIF}
 End;
 
@@ -543,7 +607,8 @@ begin
    Result := TJSONObject(vJSONObject).names.length;
   {$IFEND}
  {$ELSE}
-  Result := TJSONObject(vJSONObject).Count;
+  Result := TJSONObject(vJSONObject).names.length;
+//  Result := TJSONObject(vJSONObject).Count;
  {$ENDIF}
 end;
 

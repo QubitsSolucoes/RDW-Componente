@@ -6,7 +6,7 @@ uses
   SysUtils, Classes, IBConnection, sqldb, SysTypes, uDWDatamodule,
   uDWJSONObject, Dialogs, ServerUtils, uDWConsts, uDWConstsData,
   RestDWServerFormU, uRESTDWPoolerDB, uRESTDWServerEvents, uRESTDWServerContext,
-  uRestDWLazDriver;
+  uRestDWLazDriver, uDWJSONTools;
 
 
 type
@@ -21,9 +21,16 @@ type
     Server_FDConnection: TIBConnection;
     FDQuery1: TSQLQuery;
     SQLTransaction1: TSQLTransaction;
+    procedure DWServerContext1ContextListangularReplyRequest(
+      const Params: TDWParams; Var ContentType, Result: String);
     procedure DWServerContext1ContextListindexReplyRequest(
       const Params: TDWParams; Var ContentType, Result: String);
     procedure DWServerContext1ContextListinitReplyRequest(
+      const Params: TDWParams; Var ContentType, Result: String);
+    procedure DWServerContext1ContextListopenfileReplyRequestStream(
+      const Params: TDWParams; Var ContentType: String;
+      Var Result: TMemoryStream);
+    procedure DWServerContext1ContextListphpReplyRequest(
       const Params: TDWParams; Var ContentType, Result: String);
     procedure DWServerEvents1EventsgetemployeeReplyEvent(Var Params: TDWParams;
       Var Result: String);
@@ -75,6 +82,7 @@ begin
    FDQuery1.Open;
    JSONValue.Encoding := Encoding;
    JSONValue.Encoded  := False;
+   JSONValue.DatabaseCharSet := RESTDWDriverFD1.DatabaseCharSet;
    JSONValue.LoadFromDataset('employee', FDQuery1, False,  Params.JsonMode, '');
    Result := JSONValue.ToJSON;
   Except
@@ -106,6 +114,69 @@ begin
            '</html>';
 end;
 
+procedure TServerMethodDM.DWServerContext1ContextListopenfileReplyRequestStream(
+  const Params: TDWParams; Var ContentType: String; Var Result: TMemoryStream);
+Var
+ vNotFound   : Boolean;
+ vFileName   : String;
+ vStringStream : TStringStream;
+begin
+ vNotFound := True;
+ Result    := TMemoryStream.Create;
+ If Params.ItemsString['filename'] <> Nil Then
+  Begin
+   vFileName := '.\www\' + DecodeStrings(Params.ItemsString['filename'].AsString,
+                                         RESTDWDriverFD1.DatabaseCharSet);
+   vNotFound := Not FileExists(vFileName);
+   If Not vNotFound Then
+    Begin
+     Try
+      Result.LoadFromFile(vFileName);
+      ContentType := GetMIMEType(vFileName);
+     Finally
+     End;
+    End;
+  End;
+ If vNotFound Then
+  Begin
+   vStringStream := TStringStream.Create('<!DOCTYPE html> ' +
+                                         '<html>' +
+                                         '  <head>' +
+                                         '    <meta charset="utf-8">' +
+                                         '    <title>My test page</title>' +
+                                         '    <link href=''http://fonts.googleapis.com/css?family=Open+Sans'' rel=''stylesheet'' type=''text/css''>' +
+                                         '  </head>' +
+                                         '  <body>' +
+                                         '    <h1>REST Dataware</h1>' +
+                                         '    <img src="http://www.resteasyobjects.com.br/myimages/LogoDW.png" alt="The REST Dataware logo: Powerfull Web Service.">' +
+                                         '  ' +
+                                         '  ' +
+                                         Format('    <p>File "%s" not Found.</p>', [vFileName]) +
+                                         '  </body>' +
+                                         '</html>');
+   Try
+    vStringStream.Position := 0;
+    Result.CopyFrom(vStringStream, vStringStream.Size);
+   Finally
+    vStringStream.Free;
+   End;
+  End;
+end;
+
+procedure TServerMethodDM.DWServerContext1ContextListphpReplyRequest(
+  const Params: TDWParams; Var ContentType, Result: String);
+var
+ s : TStringlist;
+begin
+ s := TStringlist.Create;
+ Try
+  s.LoadFromFile('.\www\index_php.html');
+  Result := s.Text;
+ Finally
+  s.Free;
+ End;
+end;
+
 procedure TServerMethodDM.DWServerContext1ContextListindexReplyRequest(
   const Params: TDWParams; Var ContentType, Result: String);
 var
@@ -114,6 +185,20 @@ begin
  s := TStringlist.Create;
  Try
   s.LoadFromFile('.\www\index.html');
+  Result := s.Text;
+ Finally
+  s.Free;
+ End;
+end;
+
+procedure TServerMethodDM.DWServerContext1ContextListangularReplyRequest(
+  const Params: TDWParams; Var ContentType, Result: String);
+var
+ s : TStringlist;
+begin
+ s := TStringlist.Create;
+ Try
+  s.LoadFromFile('.\www\dw_angular.html');
   Result := s.Text;
  Finally
   s.Free;

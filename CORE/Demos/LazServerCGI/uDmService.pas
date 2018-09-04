@@ -20,6 +20,8 @@ type
     RESTDWPoolerDB1: TRESTDWPoolerDB;
     Server_FDConnection: TIBConnection;
     SQLTransaction1: TSQLTransaction;
+    procedure DWServerContext1ContextListangularReplyRequest(
+      const Params: TDWParams; Var ContentType, Result: String);
     procedure DWServerContext1ContextListindexReplyRequest(
       const Params: TDWParams; Var ContentType, Result: String);
     procedure DWServerContext1ContextListinitReplyRequest(
@@ -129,6 +131,10 @@ begin
    JSONValue.LoadFromDataset('employee', FDQuery1, False,  Params.JsonMode, '');
    Result := JSONValue.ToJSON;
   Except
+   On E : Exception Do
+    Begin
+     Result := Format('{"Error":"%s"}', [E.Message]);
+    End;
   End;
  Finally
   JSONValue.Free;
@@ -143,6 +149,20 @@ begin
  s := TStringlist.Create;
  Try
   s.LoadFromFile('.\www\index.html');
+  Result := s.Text;
+ Finally
+  s.Free;
+ End;
+end;
+
+procedure TServerMethodDM.DWServerContext1ContextListangularReplyRequest(
+  const Params: TDWParams; Var ContentType, Result: String);
+var
+ s : TStringlist;
+begin
+ s := TStringlist.Create;
+ Try
+  s.LoadFromFile('.\www\dw_angular.html');
   Result := s.Text;
  Finally
   s.Free;
@@ -222,7 +242,7 @@ end;
 procedure TServerMethodDM.DWServerEvents1EventstesteReplyEvent(
   Var Params: TDWParams; Var Result: String);
 begin
- Result := 'Sou eu ServerEvents 1';
+ Result := Format('{"Message":"%s"}', ['Sou eu ServerEvents 1']);
 end;
 
 procedure TServerMethodDM.Server_FDConnectionBeforeConnect(Sender: TObject);

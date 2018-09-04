@@ -1,10 +1,6 @@
-﻿{$IFNDEF FPC}
- {$if CompilerVersion > 24} // Delphi 2010 pra cima
-  {$LEGACYIFEND ON}
- {$IFEND}
-{$ENDIF}
-
 //dwInc de Configurações
+{.$DEFINE TESTFMX}
+
 {$IFNDEF FPC}
  {$IF DECLARED(FireMonkeyVersion)}
   {$DEFINE HAS_FMX}
@@ -43,7 +39,7 @@
   {$DEFINE HAS_UTF8}
  {$ENDIF}
  //IOSSimulator
- {$IFDEF DCCIOS32} 
+ {$IFDEF DCCIOS32}
   {$DEFINE HAS_UTF8}
  {$ENDIF}
  //MacOSX
@@ -70,6 +66,12 @@
 {$DEFINE DWMEMTABLE}
 {$ENDIF}
 
+{$IFDEF TESTFMX}
+  {$DEFINE HAS_FMX}
+  {$DEFINE HAS_UTF8}
+{$ENDIF}
+
+
 {$IFDEF CLIENTDATASET}
   {$UNDEF RESJEDI}
   {$UNDEF RESTKBMMEMTABLE}
@@ -94,8 +96,13 @@
   {$UNDEF RESTKBMMEMTABLE}
 {$ENDIF}
 
-{$IFNDEF DW_INC}
-{$DEFINE DW_INC}
+{$IFNDEF FPC}
+ {$IF DECLARED(HAS_FMX)}
+  {$IFDEF CompilerVersion > 24} // Delphi 2010 pra cima
+   {$LEGACYIFEND ON}
+  {$ENDIF}
+ {$IFEND}
+{$ENDIF}
 
 {$DEFINE BORLAND}
 
@@ -107,9 +114,6 @@
 {$ENDIF}
 
 {$IFDEF BORLAND}
-  {$IFDEF LINUX}
-    {$DEFINE KYLIX}
-  {$ENDIF LINUX}
   {$IFNDEF CLR}
     {$IFNDEF CPUX86}
       {$IFNDEF CPUX64}
@@ -134,10 +138,6 @@
 {------------------------------------------------------------------------------}
 
 {$IFDEF BORLAND}
-  {$IFDEF KYLIX}
-    {$I kylix.inc} // FPC incompatible stuff
-  {$ELSE ~KYLIX}
-
     {$DEFINE UNKNOWN_COMPILER_VERSION}
 
     {$IFDEF VER80}
@@ -456,8 +456,6 @@
       {$DEFINE RTL280_UP}
       {$UNDEF UNKNOWN_COMPILER_VERSION}
     {$ENDIF}
-
-  {$ENDIF ~KYLIX}
 
   {$IFDEF BCB}
     {$DEFINE CPPBUILDER}
@@ -823,21 +821,6 @@
 {$ENDIF}
 
 {------------------------------------------------------------------------------}
-{ KYLIXX_UP from KYLIXX mappings                                               }
-{------------------------------------------------------------------------------}
-
-{$IFDEF KYLIX3} {$DEFINE KYLIX3_UP} {$ENDIF}
-{$IFDEF KYLIX2} {$DEFINE KYLIX2_UP} {$ENDIF}
-{$IFDEF KYLIX1} {$DEFINE KYLIX1_UP} {$ENDIF}
-
-{------------------------------------------------------------------------------}
-{ KYLIXX_UP from KYLIXX_UP mappings                                            }
-{------------------------------------------------------------------------------}
-
-{$IFDEF KYLIX3_UP} {$DEFINE KYLIX2_UP} {$ENDIF}
-{$IFDEF KYLIX2_UP} {$DEFINE KYLIX1_UP} {$ENDIF}
-
-{------------------------------------------------------------------------------}
 { Map COMPILERX_UP to friendly feature names                                   }
 {------------------------------------------------------------------------------}
 
@@ -1156,5 +1139,3 @@
 
 // for Delphi/BCB trial versions remove the point from the line below
 {.$UNDEF SUPPORTS_WEAKPACKAGEUNIT}
-
-{$ENDIF ~DW_INC}

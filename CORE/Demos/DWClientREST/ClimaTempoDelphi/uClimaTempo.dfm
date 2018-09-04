@@ -2,8 +2,8 @@ object frmClimaTempo: TfrmClimaTempo
   Left = 0
   Top = 0
   Caption = 'Clima Tempo for DWClient'
-  ClientHeight = 283
-  ClientWidth = 570
+  ClientHeight = 493
+  ClientWidth = 572
   Color = clBtnFace
   Font.Charset = DEFAULT_CHARSET
   Font.Color = clWindowText
@@ -14,91 +14,41 @@ object frmClimaTempo: TfrmClimaTempo
   OnCreate = FormCreate
   PixelsPerInch = 96
   TextHeight = 13
-  object Label1: TLabel
-    Left = 22
-    Top = 216
-    Width = 29
+  object Label10: TLabel
+    Left = 334
+    Top = 264
+    Width = 42
     Height = 13
-    Caption = 'Token'
+    Caption = 'DWClima'
   end
-  object Label3: TLabel
-    Left = 8
-    Top = 15
-    Width = 86
+  object Label11: TLabel
+    Left = 334
+    Top = 340
+    Width = 44
     Height = 13
-    Caption = 'C'#243'digo da cidade:'
+    Caption = 'memMain'
   end
-  object Label8: TLabel
-    Left = 135
-    Top = 15
-    Width = 80
+  object Label12: TLabel
+    Left = 334
+    Top = 414
+    Width = 64
     Height = 13
-    Caption = 'Nome da cidade:'
+    Caption = 'memWeather'
   end
-  object Label9: TLabel
-    Left = 262
-    Top = 15
-    Width = 41
+  object Label13: TLabel
+    Left = 4
+    Top = 267
+    Width = 82
     Height = 13
-    Caption = 'C'#243'd Pais'
-  end
-  object btnCod: TButton
-    Left = 8
-    Top = 61
-    Width = 121
-    Height = 25
-    Caption = 'Buscar (cod)'
-    TabOrder = 0
-    OnClick = btnCodClick
-  end
-  object btCidade: TButton
-    Left = 135
-    Top = 61
-    Width = 121
-    Height = 25
-    Caption = 'Buscar (cidade)'
-    TabOrder = 1
-    OnClick = btCidadeClick
-  end
-  object edCidade: TEdit
-    Left = 135
-    Top = 34
-    Width = 121
-    Height = 21
-    TabOrder = 2
-    Text = 'jundiai'
-  end
-  object edUF: TEdit
-    Left = 262
-    Top = 34
-    Width = 41
-    Height = 21
-    TabOrder = 3
-    Text = 'br'
-  end
-  object edToken: TEdit
-    Left = 22
-    Top = 235
-    Width = 288
-    Height = 21
-    TabOrder = 4
-    Visible = False
-  end
-  object edCodCid: TEdit
-    Left = 8
-    Top = 34
-    Width = 121
-    Height = 21
-    TabOrder = 5
-    Text = '3459462'
+    Caption = 'Resposta da URL'
   end
   object cbRetornoPais: TComboBox
-    Left = 317
+    Left = 334
     Top = 16
     Width = 228
     Height = 21
     ItemIndex = 0
-    TabOrder = 6
+    TabOrder = 0
     Text = 'pt - portugu'#234's'
     Items.Strings = (
       'pt - portugu'#234's'
@@ -136,14 +86,14 @@ object frmClimaTempo: TfrmClimaTempo
       'zh_tw - chin'#234's tradicional')
   end
   object Panel1: TPanel
-    Left = 318
+    Left = 335
     Top = 43
     Width = 227
     Height = 214
-    TabOrder = 7
+    TabOrder = 1
     object imPrevisao: TImage
       Left = 16
-      Top = 13
+      Top = 18
       Width = 65
       Height = 59
       Picture.Data = {
@@ -1114,7 +1064,7 @@ object frmClimaTempo: TfrmClimaTempo
     end
     object Label2: TLabel
       Left = 155
-      Top = 21
+      Top = 18
       Width = 19
       Height = 16
       Caption = #186' C'
@@ -1140,7 +1090,7 @@ object frmClimaTempo: TfrmClimaTempo
     end
     object lbl_temp: TLabel
       Left = 87
-      Top = 13
+      Top = 18
       Width = 62
       Height = 58
       Caption = '20'
@@ -1153,60 +1103,254 @@ object frmClimaTempo: TfrmClimaTempo
     end
     object Label4: TLabel
       Left = 16
-      Top = 135
+      Top = 119
       Width = 53
       Height = 13
       Caption = 'Temp Max:'
     end
     object Label5: TLabel
       Left = 16
-      Top = 154
+      Top = 138
       Width = 49
       Height = 13
       Caption = 'Temp Min:'
     end
     object Label6: TLabel
       Left = 16
-      Top = 173
+      Top = 157
       Width = 45
       Height = 13
       Caption = 'Umidade:'
     end
     object Label7: TLabel
       Left = 16
-      Top = 192
+      Top = 176
       Width = 32
       Height = 13
       Caption = 'Vento:'
     end
     object lbl_vento: TLabel
       Left = 100
-      Top = 192
+      Top = 176
       Width = 32
       Height = 13
       Caption = 'Vento:'
     end
     object lbl_max: TLabel
       Left = 100
-      Top = 135
+      Top = 119
       Width = 53
       Height = 13
       Caption = 'Temp Max:'
     end
     object lbl_min: TLabel
       Left = 100
-      Top = 154
+      Top = 138
       Width = 49
       Height = 13
       Caption = 'Temp Min:'
     end
     object lbl_umidade: TLabel
       Left = 100
-      Top = 173
+      Top = 157
       Width = 45
       Height = 13
       Caption = 'Umidade:'
     end
+    object lbl_Cidade: TLabel
+      Left = 1
+      Top = 1
+      Width = 225
+      Height = 13
+      Margins.Right = 4
+      Align = alTop
+      Alignment = taCenter
+      ExplicitWidth = 3
+    end
+    object lbl_Data: TLabel
+      Left = 16
+      Top = 195
+      Width = 71
+      Height = 13
+      Caption = 'Atualizado em:'
+    end
+  end
+  object PageControl1: TPageControl
+    Left = 4
+    Top = 8
+    Width = 324
+    Height = 257
+    ActivePage = TabSheet1
+    TabOrder = 2
+    object TabSheet1: TTabSheet
+      Caption = 'Api do Weather'
+      object Label1: TLabel
+        Left = 22
+        Top = 208
+        Width = 29
+        Height = 13
+        Caption = 'Token'
+      end
+      object Label3: TLabel
+        Left = 8
+        Top = 15
+        Width = 86
+        Height = 13
+        Caption = 'C'#243'digo da cidade:'
+      end
+      object Label8: TLabel
+        Left = 135
+        Top = 15
+        Width = 80
+        Height = 13
+        Caption = 'Nome da cidade:'
+      end
+      object Label9: TLabel
+        Left = 262
+        Top = 15
+        Width = 41
+        Height = 13
+        Caption = 'C'#243'd Pais'
+      end
+      object edToken: TEdit
+        Left = 15
+        Top = 200
+        Width = 288
+        Height = 21
+        TabOrder = 0
+        Text = 'b58bb5a16f05ff815c2f95d466079b89'
+      end
+      object btnCod: TButton
+        Left = 8
+        Top = 61
+        Width = 121
+        Height = 25
+        Caption = 'Buscar (cod)'
+        TabOrder = 1
+        OnClick = btnCodClick
+      end
+      object btCidade: TButton
+        Left = 135
+        Top = 61
+        Width = 121
+        Height = 25
+        Caption = 'Buscar (cidade)'
+        TabOrder = 2
+        OnClick = btCidadeClick
+      end
+      object edCodCid: TEdit
+        Left = 8
+        Top = 34
+        Width = 121
+        Height = 21
+        TabOrder = 3
+        Text = '3459462'
+      end
+      object edCidade: TEdit
+        Left = 135
+        Top = 34
+        Width = 121
+        Height = 21
+        TabOrder = 4
+        Text = 'jundiai'
+      end
+      object edUF: TEdit
+        Left = 262
+        Top = 34
+        Width = 41
+        Height = 21
+        TabOrder = 5
+        Text = 'br'
+      end
+    end
+    object TabSheet2: TTabSheet
+      Caption = 'Api do ClimaTempo'
+      ImageIndex = 1
+      ExplicitLeft = 0
+      ExplicitTop = 0
+      ExplicitWidth = 281
+      ExplicitHeight = 165
+      object edtCodCidClimaTempo: TLabeledEdit
+        Left = 16
+        Top = 24
+        Width = 121
+        Height = 21
+        EditLabel.Width = 56
+        EditLabel.Height = 13
+        EditLabel.Caption = 'Cod.Cidade'
+        NumbersOnly = True
+        TabOrder = 0
+        Text = '5297'
+      end
+      object edtTokenClimaTempo: TLabeledEdit
+        Left = 16
+        Top = 181
+        Width = 209
+        Height = 21
+        EditLabel.Width = 89
+        EditLabel.Height = 13
+        EditLabel.Caption = 'Token ClimaTempo'
+        TabOrder = 1
+        Text = '0966c417eb8308b56760fd8f734e8743'
+      end
+      object Button1: TButton
+        Left = 16
+        Top = 61
+        Width = 121
+        Height = 25
+        Caption = 'Buscar...'
+        TabOrder = 2
+        OnClick = Button1Click
+      end
+    end
+  end
+  object DBGrid1: TDBGrid
+    Left = 334
+    Top = 278
+    Width = 226
+    Height = 59
+    DataSource = DataSource1
+    TabOrder = 3
+    TitleFont.Charset = DEFAULT_CHARSET
+    TitleFont.Color = clWindowText
+    TitleFont.Height = -11
+    TitleFont.Name = 'Tahoma'
+    TitleFont.Style = []
+  end
+  object DBGrid2: TDBGrid
+    Left = 334
+    Top = 354
+    Width = 226
+    Height = 59
+    DataSource = DataSource2
+    TabOrder = 4
+    TitleFont.Charset = DEFAULT_CHARSET
+    TitleFont.Color = clWindowText
+    TitleFont.Height = -11
+    TitleFont.Name = 'Tahoma'
+    TitleFont.Style = []
+  end
+  object DBGrid3: TDBGrid
+    Left = 334
+    Top = 427
+    Width = 226
+    Height = 60
+    DataSource = DataSource3
+    TabOrder = 5
+    TitleFont.Charset = DEFAULT_CHARSET
+    TitleFont.Color = clWindowText
+    TitleFont.Height = -11
+    TitleFont.Name = 'Tahoma'
+    TitleFont.Style = []
+  end
+  object Memo1: TMemo
+    Left = 4
+    Top = 281
+    Width = 324
+    Height = 206
+    Lines.Strings = (
+      'Memo1')
+    TabOrder = 6
   end
   object DWClientRESTClima: TDWClientREST
     UseSSL = False
@@ -1216,14 +1360,15 @@ object frmClimaTempo: TfrmClimaTempo
     RequestCharset = esUtf8
     ProxyOptions.BasicAuthentication = False
     ProxyOptions.ProxyPort = 0
-    RequestTimeOut = 1000
+    RequestTimeOut = 10000
     AllowCookies = False
     HandleRedirects = False
+    RedirectMaximum = 1
     VerifyCert = False
     AuthOptions.HasAuthentication = False
     AccessControlAllowOrigin = '*'
-    Left = 160
-    Top = 96
+    Left = 264
+    Top = 128
   end
   object DWResponseClima: TDWResponseTranslator
     ElementAutoReadRootIndex = True
@@ -1234,21 +1379,11 @@ object frmClimaTempo: TfrmClimaTempo
     RequestDelete = rtDelete
     FieldDefs = <>
     ClientREST = DWClientRESTClima
-    Left = 128
-    Top = 96
+    Left = 264
+    Top = 72
   end
   object DWClima: TRESTDWClientSQL
     FieldDefs = <>
-    IndexDefs = <>
-    MasterFields = ''
-    FetchOptions.AssignedValues = [evMode]
-    FetchOptions.Mode = fmAll
-    ResourceOptions.AssignedValues = [rvSilentMode]
-    ResourceOptions.SilentMode = True
-    UpdateOptions.AssignedValues = [uvCheckRequired, uvAutoCommitUpdates]
-    UpdateOptions.CheckRequired = False
-    UpdateOptions.AutoCommitUpdates = True
-    StoreDefs = True
     MasterCascadeDelete = True
     Datapacks = -1
     DataCache = False
@@ -1257,8 +1392,8 @@ object frmClimaTempo: TfrmClimaTempo
     AutoCommitData = False
     AutoRefreshAfterCommit = False
     DWResponseTranslator = DWResponseClima
-    Left = 192
-    Top = 96
+    Left = 48
+    Top = 128
   end
   object memWeather: TFDMemTable
     FetchOptions.AssignedValues = [evMode]
@@ -1268,8 +1403,8 @@ object frmClimaTempo: TfrmClimaTempo
     UpdateOptions.AssignedValues = [uvCheckRequired, uvAutoCommitUpdates]
     UpdateOptions.CheckRequired = False
     UpdateOptions.AutoCommitUpdates = True
-    Left = 56
-    Top = 168
+    Left = 112
+    Top = 184
   end
   object memMain: TFDMemTable
     FieldDefs = <>
@@ -1286,6 +1421,39 @@ object frmClimaTempo: TfrmClimaTempo
     UpdateOptions.AutoCommitUpdates = True
     StoreDefs = True
     Left = 24
-    Top = 168
+    Top = 176
+  end
+  object DWClientRESTIcon: TDWClientREST
+    UseSSL = False
+    SSLVersions = []
+    UserAgent = 'Mozilla/3.0 (compatible; Indy Library)'
+    ContentType = 'application/json'
+    RequestCharset = esUtf8
+    ProxyOptions.BasicAuthentication = False
+    ProxyOptions.ProxyPort = 0
+    RequestTimeOut = 1000
+    AllowCookies = False
+    HandleRedirects = False
+    RedirectMaximum = 1
+    VerifyCert = False
+    AuthOptions.HasAuthentication = False
+    AccessControlAllowOrigin = '*'
+    Left = 264
+    Top = 184
+  end
+  object DataSource1: TDataSource
+    DataSet = DWClima
+    Left = 424
+    Top = 288
+  end
+  object DataSource2: TDataSource
+    DataSet = memMain
+    Left = 424
+    Top = 366
+  end
+  object DataSource3: TDataSource
+    DataSet = memWeather
+    Left = 424
+    Top = 440
   end
 end

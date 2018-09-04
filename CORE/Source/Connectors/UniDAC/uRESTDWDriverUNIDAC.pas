@@ -26,12 +26,12 @@ Type
   Function ExecuteCommand       (SQL              : String;
                                  Var Error        : Boolean;
                                  Var MessageError : String;
-                                 Execute          : Boolean = False) : TJSONValue;Overload;Override;
+                                 Execute          : Boolean = False) : String;Overload;Override;
   Function ExecuteCommand       (SQL              : String;
                                  Params           : TDWParams;
                                  Var Error        : Boolean;
                                  Var MessageError : String;
-                                 Execute          : Boolean = False) : TJSONValue;Overload;Override;
+                                 Execute          : Boolean = False) : String;Overload;Override;
   Function InsertMySQLReturnID  (SQL              : String;
                                  Var Error        : Boolean;
                                  Var MessageError : String) : Integer;Overload;Override;
@@ -572,15 +572,16 @@ Begin
 End;
 
 function TRESTDWDriverUNIDAC.ExecuteCommand(SQL              : String;
-                                        Params           : TDWParams;
-                                        Var Error        : Boolean;
-                                        Var MessageError : String;
-                                        Execute          : Boolean) : TJSONValue;
+                                            Params           : TDWParams;
+                                            Var Error        : Boolean;
+                                            Var MessageError : String;
+                                            Execute          : Boolean) : String;
 Var
  vTempQuery    : TUniQuery;
  A, I          : Integer;
  vParamName    : String;
  vStringStream : TMemoryStream;
+ aResult       : TJSONValue;
  Function GetParamIndex(Params : TUniParams; ParamName : String) : Integer;
  Var
   I : Integer;
@@ -598,7 +599,8 @@ Var
 Begin
  Inherited;
  Error  := False;
- Result := TJSONValue.Create;
+ Result := '';
+ aResult := TJSONValue.Create;
  vTempQuery               := TUniQuery.Create(Owner);
  Try
   vTempQuery.Connection   := vFDConnection;
@@ -785,30 +787,30 @@ Begin
   If Not Execute Then
    Begin
     vTempQuery.Active := True;
-    If Result = Nil Then
-     Result := TJSONValue.Create;
-    Result.Encoded         := True;
-    Result.Encoding        := Encoding;
+    If aResult = Nil Then
+     aResult := TJSONValue.Create;
+    aResult.Encoded         := True;
+    aResult.Encoding        := Encoding;
     Try
-     Result.LoadFromDataset('RESULTDATA', vTempQuery, EncodeStringsJSON);
+     aResult.LoadFromDataset('RESULTDATA', vTempQuery, EncodeStringsJSON);
+     Result := aResult.ToJSON;
     Finally
     End;
    End
   Else
    Begin
-        if not vFDConnection.Connected then
-           vFDConnection.Connect;
-
-        if not vFDConnection.InTransaction then
-           vFDConnection.StartTransaction;
-
+    if not vFDConnection.Connected then
+     vFDConnection.Connect;
+    if not vFDConnection.InTransaction then
+     vFDConnection.StartTransaction;
     vTempQuery.ExecSQL;
-    If Result = Nil Then
-     Result := TJSONValue.Create;
-    Result.Encoded         := True;
-    Result.Encoding        := Encoding;
-    Result.SetValue('COMMANDOK');
+    If aResult = Nil Then
+     aResult := TJSONValue.Create;
+    aResult.Encoded         := True;
+    aResult.Encoding        := Encoding;
     vFDConnection.Commit;
+    aResult.SetValue('COMMANDOK');
+    Result := aResult.ToJSON;
    End;
  Except
   On E : Exception do
@@ -816,16 +818,18 @@ Begin
     Try
      Error        := True;
      MessageError := E.Message;
-     If Result = Nil Then
-      Result := TJSONValue.Create;
-     Result.Encoded         := True;
-     Result.Encoding        := Encoding;
-     Result.SetValue(GetPairJSON('NOK', MessageError));
+     If aResult = Nil Then
+      aResult := TJSONValue.Create;
+     aResult.Encoded         := True;
+     aResult.Encoding        := Encoding;
+     aResult.SetValue(GetPairJSON('NOK', MessageError));
+     Result := aResult.ToJSON;
      vFDConnection.Rollback;
     Except
     End;
    End;
  End;
+ FreeAndNil(aResult);
  vTempQuery.Close;
  vTempQuery.Free;
 End;
@@ -1570,15 +1574,17 @@ Begin
 End;
 
 Function TRESTDWDriverUNIDAC.ExecuteCommand(SQL              : String;
-                                        Var Error        : Boolean;
-                                        Var MessageError : String;
-                                        Execute          : Boolean) : TJSONValue;
+                                            Var Error        : Boolean;
+                                            Var MessageError : String;
+                                            Execute          : Boolean) : String;
 Var
  vTempQuery   : TUniQuery;
+ aResult      : TJSONValue;
 Begin
  Inherited;
- Result := Nil;
+ Result := '';
  Error  := False;
+ aResult := Nil;
  //Result := TJSONValue.Create;
  vTempQuery               := TUniQuery.Create(Owner);
  Try
@@ -1593,11 +1599,13 @@ Begin
   If Not Execute Then
    Begin
     vTempQuery.Open;
-    Result         := TJSONValue.Create;
+    aResult         := TJSONValue.Create;
     Try
-     Result.Encoded         := EncodeStringsJSON;
-     Result.Encoding        := Encoding;
-     Result.LoadFromDataset('RESULTDATA', vTempQuery, EncodeStringsJSON);
+     aResult.Encoded         := EncodeStringsJSON;
+     aResult.Encoding        := Encoding;
+     aResult.LoadFromDataset('RESULTDATA', vTempQuery, EncodeStringsJSON);
+     Result := aResult.ToJSON;
+     FreeAndNil(aResult);
      Error         := False;
     Finally
     End;
@@ -1612,13 +1620,15 @@ Begin
           vFDConnection.StartTransaction;
 
       vTempQuery.ExecSQL;
-      If Result = Nil Then
-       Result := TJSONValue.Create;
-      Result.Encoded         := True;
-      Result.Encoding        := Encoding;
-      Result.SetValue('COMMANDOK');
+      If aResult = Nil Then
+       aResult := TJSONValue.Create;
+      aResult.Encoded         := True;
+      aResult.Encoding        := Encoding;
       vFDConnection.Commit;
+      aResult.SetValue('COMMANDOK');
       Error         := False;
+      Result := aResult.ToJSON;
+      FreeAndNil(aResult);
     finally
     end;
 
@@ -1627,22 +1637,21 @@ Begin
   On E : Exception do
    Begin
     Try
-     Error          := True;
-     MessageError   := E.Message;
-     If Result = Nil Then
-      Result        := TJSONValue.Create;
-     Result.Encoded         := True;
-     Result.Encoding        := Encoding;
-     Result.SetValue(GetPairJSON('NOK', MessageError));
+     Error            := True;
+     MessageError     := E.Message;
+     If aResult = Nil Then
+      aResult         := TJSONValue.Create;
+     aResult.Encoded  := True;
+     aResult.Encoding := Encoding;
+     aResult.SetValue(GetPairJSON('NOK', MessageError));
+     Result           := aResult.ToJSON;
+     FreeAndNil(aResult);
      vFDConnection.Rollback;
     Except
     End;
 
    End;
  End;
-   {ico}
-// Result.Free;
-   {ico}
  vTempQuery.Close;
  vTempQuery.Free;
 End;

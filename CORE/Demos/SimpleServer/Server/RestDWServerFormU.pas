@@ -48,51 +48,15 @@ Uses
   IdBaseComponent,
   IdTCPConnection,
   IdTCPClient,
-  IdHTTP, uDWJSONObject, uDWAbout;
+  IdHTTP, uDWJSONObject, uDWAbout, dwCGIRunner, dwISAPIRunner;
 
 type
   TRestDWForm = class(TForm)
-    ButtonStart: TButton;
-    ButtonStop: TButton;
     Label8: TLabel;
     Bevel3: TBevel;
-    LSeguro: TLabel;
-    CbPoolerState: TCheckBox;
     PageControl1: TPageControl;
     TsConfigs: TTabSheet;
     TsLogs: TTabSheet;
-    Label1: TLabel;
-    Label2: TLabel;
-    Label3: TLabel;
-    Label7: TLabel;
-    Label9: TLabel;
-    Label10: TLabel;
-    Label11: TLabel;
-    Label13: TLabel;
-    Bevel1: TBevel;
-    Bevel2: TBevel;
-    LbPasta: TLabel;
-    Label14: TLabel;
-    Label6: TLabel;
-    Image1: TImage;
-    Label5: TLabel;
-    Bevel4: TBevel;
-    Label4: TLabel;
-    Label15: TLabel;
-    Label16: TLabel;
-    Label17: TLabel;
-    EdPortaDW: TEdit;
-    EdUserNameDW: TEdit;
-    EdPasswordDW: TEdit;
-    CbAdaptadores: TComboBox;
-    EdPortaBD: TEdit;
-    EdUserNameBD: TEdit;
-    EdPasswordBD: TEdit;
-    EdPasta: TEdit;
-    EdBD: TEdit;
-    EPrivKeyFile: TEdit;
-    ECertFile: TEdit;
-    EPrivKeyPass: TMaskEdit;
     ApplicationEvents1: TApplicationEvents;
     CtiPrincipal: TTrayIcon;
     PmMenu: TPopupMenu;
@@ -105,13 +69,62 @@ type
     Label18: TLabel;
     RESTServicePooler1: TRESTServicePooler;
     Tupdatelogs: TTimer;
-    CbDriver: TComboBox;
-    Label20: TLabel;
-    CkUsaURL: TCheckBox;
-    EdURL: TEdit;
+    RESTDWServiceNotification1: TRESTDWServiceNotification;
+    paTopo: TPanel;
+    Image2: TImage;
+    paPortugues: TPanel;
+    Image3: TImage;
+    paEspanhol: TPanel;
+    Image4: TImage;
+    paIngles: TPanel;
+    Image5: TImage;
+    Panel1: TPanel;
+    Panel3: TPanel;
+    Image7: TImage;
+    Panel4: TPanel;
+    Image8: TImage;
+    Label1: TLabel;
+    Label2: TLabel;
+    Label3: TLabel;
+    edPortaDW: TEdit;
+    edUserNameDW: TEdit;
+    edPasswordDW: TEdit;
     cbForceWelcome: TCheckBox;
     cbauthentication: TCheckBox;
-    RESTDWServiceNotification1: TRESTDWServiceNotification;
+    labPorta: TLabel;
+    labUsuario: TLabel;
+    labSenha: TLabel;
+    lbPasta: TLabel;
+    labNomeBD: TLabel;
+    Label14: TLabel;
+    edURL: TEdit;
+    cbAdaptadores: TComboBox;
+    edPortaBD: TEdit;
+    edUserNameBD: TEdit;
+    edPasswordBD: TEdit;
+    edPasta: TEdit;
+    edBD: TEdit;
+    cbDriver: TComboBox;
+    ckUsaURL: TCheckBox;
+    Label5: TLabel;
+    Label6: TLabel;
+    Label15: TLabel;
+    Label16: TLabel;
+    Label17: TLabel;
+    ePrivKeyFile: TEdit;
+    eCertFile: TEdit;
+    ePrivKeyPass: TMaskEdit;
+    labConexao: TLabel;
+    Label7: TLabel;
+    labDBConfig: TLabel;
+    labSSL: TLabel;
+    Panel2: TPanel;
+    lSeguro: TLabel;
+    ButtonStart: TButton;
+    ButtonStop: TButton;
+    cbPoolerState: TCheckBox;
+    labSistema: TLabel;
+    labVersao: TLabel;
     procedure FormCreate(Sender: TObject);
     procedure ApplicationEvents1Idle(Sender: TObject; var Done: Boolean);
     procedure ButtonStartClick(Sender: TObject);
@@ -127,6 +140,9 @@ type
     procedure TupdatelogsTimer(Sender: TObject);
     procedure CbDriverCloseUp(Sender: TObject);
     procedure CkUsaURLClick(Sender: TObject);
+    procedure Image3Click(Sender: TObject);
+    procedure Image4Click(Sender: TObject);
+    procedure Image5Click(Sender: TObject);
   Private
     { Private declarations }
     VLastRequest,
@@ -140,6 +156,7 @@ type
     Function GetHandleOnTaskBar: THandle;
     procedure ChangeStatusWindow;
     procedure HideApplication;
+    procedure Image2Click(Sender: TObject);
   Public
     { Public declarations }
     procedure ShowBalloonTips(IconMessage: Integer = 0; MessageValue: string = '');
@@ -156,6 +173,9 @@ type
     Property DatabaseName: string
       Read   VDatabaseName
       Write  VDatabaseName;
+
+    procedure Locale_Portugues( pLocale : String );
+
   End;
 
 var
@@ -170,7 +190,7 @@ implementation
 {$ENDIF}
 
 Uses
-  Winapi.ShellApi,
+  Winapi.ShellApi, uDWConsts,
   UDmService;
 
 Function ServerIpIndex(Items: TStrings; ChooseIP: string): Integer;
@@ -212,6 +232,7 @@ Begin
   If CkUsaURL.Checked Then
   Begin
     CbAdaptadores.Visible := False;
+
     EdURL.Visible         := True;
   End
   Else
@@ -275,6 +296,68 @@ Begin
   ShowWindow(GetHandleOnTaskBar, SW_HIDE);
   ChangeStatusWindow;
 End;
+
+procedure TRestDWForm.Image2Click(Sender: TObject);
+begin
+     Locale_Portugues( 'ingles' );
+end;
+
+procedure TRestDWForm.Image3Click(Sender: TObject);
+begin
+     Locale_Portugues( 'portugues' );
+end;
+
+procedure TRestDWForm.Image4Click(Sender: TObject);
+begin
+     Locale_Portugues( 'espanhol' );
+end;
+
+procedure TRestDWForm.Image5Click(Sender: TObject);
+begin
+     Locale_Portugues( 'ingles' );
+end;
+
+procedure TRestDWForm.Locale_Portugues(pLocale: String);
+begin
+
+     if pLocale = 'portugues' then
+     begin
+        paPortugues.Color   := clWhite;
+        paEspanhol.Color    := $002a2a2a;
+        paIngles.Color      := $002a2a2a;
+
+        labConexao.Caption  := ' .: CONFIGURAÇÃO DO SERVIDOR';
+        labDBConfig.Caption      := ' .: CONFIGURAÇÃO DO BANCO DE DADOS';
+        labSSL.Caption      := ' .: CONFIGURAÇÃO DO SSL';
+        //cbxCompressao.Caption := 'Compressão';
+     end
+     else
+     if pLocale = 'ingles' then
+     begin
+        paPortugues.Color   := $002a2a2a;
+        paEspanhol.Color    := $002a2a2a;
+        paIngles.Color      := clWhite;
+
+        labConexao.Caption  := ' .: SQL COMMAND';
+        labDBConfig.Caption      := ' .: SERVER CONFIGURATION';
+        labSSL.Caption      := ' .: SSL CONFIGURATION';
+        //cbxCompressao.Caption := 'Compresión';
+     end
+     else
+     if pLocale = 'espanhol' then
+     begin
+        paPortugues.Color   := $002a2a2a;
+        paEspanhol.Color    := clWhite;
+        paIngles.Color      := $002a2a2a;
+
+        labConexao.Caption  := ' .: CONFIGURATIÓN DEL SERVIDOR';
+        labDBConfig.Caption      := ' .: CONFIGURATIÓN DEL BANCO DE DADOS';
+        labSSL.Caption      := ' .: CONFIGURATIÓN DEL SSL';
+
+        //cbxCompressao.Caption := 'Compressão';
+     end;
+
+end;
 
 procedure TRestDWForm.RestaurarAplicao1Click(Sender: TObject);
 Begin
@@ -349,6 +432,8 @@ procedure TRestDWForm.ButtonStartClick(Sender: TObject);
 var
   Ini: TIniFile;
 Begin
+//  DWCGIRunner1.BaseFiles  := ExtractFilePath(ParamSTR(0));
+//  DWCGIRunner1.PHPIniPath := ExtractFilePath(ParamSTR(0)) + 'php5\';
   If FileExists(FCfgName) Then
     DeleteFile(FCfgName);
   Ini := TIniFile.Create(FCfgName);
@@ -359,6 +444,7 @@ Begin
   Else
   Begin
     Ini.WriteString('BancoDados', 'Servidor', CbAdaptadores.Text);
+    cbAdaptadores.onChange(cbAdaptadores);
   End;
   Ini.WriteInteger('BancoDados', 'DRIVER', cbDriver.ItemIndex);
   If ckUsaURL.Checked Then
@@ -367,7 +453,7 @@ Begin
    Ini.WriteInteger('BancoDados', 'USEDNS', 0);
   Ini.WriteString('BancoDados', 'BD', EdBD.Text);
   Ini.WriteString('BancoDados', 'Pasta', EdPasta.Text);
-  Ini.WriteString('BancoDados', 'PortaDB', EdPortaBD.Text);
+  Ini.WriteString('BancoDados', 'PortaBD', EdPortaBD.Text);
   Ini.WriteString('BancoDados', 'PortaDW', EdPortaDW.Text);
   Ini.WriteString('BancoDados', 'UsuarioBD', EdUserNameBD.Text);
   Ini.WriteString('BancoDados', 'SenhaBD', EdPasswordBD.Text);
@@ -418,6 +504,9 @@ End;
 
 procedure TRestDWForm.FormCreate(Sender: TObject);
 Begin
+
+  labVersao.Caption := uDWConsts.DWVERSAO;
+
   // define o nome do .ini de acordo c o EXE
   // dessa forma se quiser testar várias instâncias do servidor em
   // portas diferentes os arquivos não irão conflitar
@@ -451,7 +540,16 @@ Begin
   Ini                     := TIniFile.Create(FCfgName);
   cbDriver.ItemIndex      := Ini.ReadInteger('BancoDados', 'DRIVER', 0);
   ckUsaURL.Checked        := Ini.ReadInteger('BancoDados', 'USEDNS', 0) = 1;
-  CbAdaptadores.ItemIndex := ServerIpIndex(CbAdaptadores.Items, Ini.ReadString('BancoDados', 'Servidor', '127.0.0.1'));
+  If ServerIpIndex(CbAdaptadores.Items, Ini.ReadString('BancoDados', 'Servidor', '')) > -1 Then
+   CbAdaptadores.ItemIndex := ServerIpIndex(CbAdaptadores.Items, Ini.ReadString('BancoDados', 'Servidor', ''))
+  Else
+   Begin
+    If Ini.ReadString('BancoDados', 'Servidor', '') <> '' Then
+     Begin
+      cbAdaptadores.Items.Add(Ini.ReadString('BancoDados', 'Servidor', ''));
+      cbAdaptadores.ItemIndex := cbAdaptadores.Items.Count -1;
+     End;
+   End;
   EdBD.Text               := Ini.ReadString('BancoDados', 'BD', 'EMPLOYEE.FDB');
   EdPasta.Text            := Ini.ReadString('BancoDados', 'Pasta', ExtractFilePath(ParamSTR(0)) + '..\');
   EdPortaBD.Text          := Ini.ReadString('BancoDados', 'PortaBD', '3050');

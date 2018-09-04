@@ -2,8 +2,7 @@ program ClimaTempoDelphi;
 
 uses
   Vcl.Forms,
-  uClimaTempo in 'uClimaTempo.pas' {frmClimaTempo},
-  uLkJSON in '..\..\..\..\..\lkJSON-1.07\uLkJSON.pas';
+  uClimaTempo in 'uClimaTempo.pas' {frmClimaTempo};
 
 {$R *.res}
 

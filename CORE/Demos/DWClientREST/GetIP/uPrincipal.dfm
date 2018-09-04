@@ -74,6 +74,7 @@ object fClientREST: TfClientREST
     RequestTimeOut = 10000
     AllowCookies = False
     HandleRedirects = False
+    RedirectMaximum = 1
     VerifyCert = False
     AuthOptions.HasAuthentication = False
     AccessControlAllowOrigin = '*'
@@ -88,6 +89,7 @@ object fClientREST: TfClientREST
     RequestInsert = rtPost
     RequestEdit = rtPost
     RequestDelete = rtDelete
+    RequestOpenUrl = 'https://www.receitaws.com.br/v1/cnpj'
     FieldDefs = <>
     ClientREST = DWClientREST1
     Left = 112

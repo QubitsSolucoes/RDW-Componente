@@ -183,19 +183,29 @@ object ServerMethodDM: TServerMethodDM
           end>
         ContentType = 'text/html'
         ContextName = 'init'
+        ContextRoutes = [crAll]
         OnReplyRequest = DWServerContext1ContextListinitReplyRequest
       end
       item
         DWParams = <>
         ContentType = 'text/html'
         ContextName = 'index'
+        ContextRoutes = [crAll]
         OnReplyRequest = DWServerContext1ContextListindexReplyRequest
       end
       item
         DWParams = <>
         ContentType = 'text/html'
         ContextName = 'openfile'
+        ContextRoutes = [crAll]
         OnReplyRequestStream = DWServerContext1ContextListopenfileReplyRequestStream
+      end
+      item
+        DWParams = <>
+        ContentType = 'text/html'
+        ContextName = 'angular'
+        ContextRoutes = [crAll]
+        OnReplyRequest = DWServerContext1ContextListangularReplyRequest
       end>
     BaseContext = 'www'
     Left = 184

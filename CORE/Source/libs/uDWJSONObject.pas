@@ -835,31 +835,14 @@ Function TJSONValue.FormatValue(bValue : String) : String;
 Var
  aResult    : String;
  vInsertTag : Boolean;
- Ini,
- Fin        : Integer; //Paleativo
 Begin
  aResult    := StringReplace(bValue, #000, '', [rfReplaceAll]);
  vInsertTag := vObjectValue In [ovDate,    ovTime,    ovDateTime,
                                 ovTimestamp];
- {$IFDEF HAS_FMX} //Alterado Ico Menezes
-  ini        := 1;
-  Fin        := 0;
- {$ELSE}
-  Ini := InitStrPos;
-  Fin := FinalStrPos;
- {$ENDIF} //alterado ICo Menezes
-
-// {$IFDEF HAS_FMX} //Alteardo para IOS Brito
-// Ini := 1;
-// Fin := 0;
-// {$ELSE} //Alteardo para IOS Brito
-// Ini := InitStrPos;
-// Fin := FinalStrPos;
-// {$ENDIF} //Alteardo para IOS Brito
  If Trim(aResult) <> '' Then
   Begin
-   If (aResult[Ini] = '"') And
-      (aResult[Length(aResult) - Fin] = '"') Then
+   If (aResult[InitStrPos] = '"') And
+      (aResult[Length(aResult) - FinalStrPos] = '"') Then
     Begin
      Delete(aResult, 1, 1);
      Delete(aResult, Length(aResult), 1);
@@ -940,7 +923,7 @@ Begin
  If Length(aValue) = 0 Then
   Exit;
  {$IFDEF FPC}
-  vTempString := vEncodingLazarus.GetString(aValue);
+  vTempString := BytesArrToString(aValue, GetEncodingID(vEncoding)); //vEncodingLazarus.GetString(aValue);
  {$ELSE}
   vTempString := BytesArrToString(aValue, GetEncodingID(vEncoding));
  {$ENDIF}
@@ -1006,7 +989,7 @@ Begin
     If Length(vTempString) = 0 Then
      Begin
       {$IFDEF FPC}
-       vTempString := vEncodingLazarus.GetString(aValue);
+       vTempString := BytesArrToString(aValue, GetEncodingID(vEncoding)); //vEncodingLazarus.GetString(aValue);
       {$ELSE}
        vTempString := BytesArrToString(aValue, GetEncodingID(vEncoding));
       {$ENDIF}
@@ -1166,7 +1149,18 @@ Var
           Else
            Begin
             {$IFDEF FPC}
-             vTempValue := Format('%s"%s"', [vTempField, StringToJsonString(GetStringEncode(bValue.Fields[i].AsString, vDatabaseCharSet))]);
+             Case DatabaseCharSet Of
+              csWin1250 : vTempValue := CP1250ToUTF8(bValue.Fields[i].AsString);
+              csWin1251 : vTempValue := CP1251ToUTF8(bValue.Fields[i].AsString);
+              csWin1252 : vTempValue := CP1252ToUTF8(bValue.Fields[i].AsString);
+              csWin1253 : vTempValue := CP1253ToUTF8(bValue.Fields[i].AsString);
+              csWin1254 : vTempValue := CP1254ToUTF8(bValue.Fields[i].AsString);
+              csWin1255 : vTempValue := CP1255ToUTF8(bValue.Fields[i].AsString);
+              csWin1256 : vTempValue := CP1256ToUTF8(bValue.Fields[i].AsString);
+              csWin1257 : vTempValue := CP1257ToUTF8(bValue.Fields[i].AsString);
+              csWin1258 : vTempValue := CP1258ToUTF8(bValue.Fields[i].AsString);
+             End;
+             vTempValue := Format('%s"%s"', [vTempField, StringToJsonString(vTempValue)]);
             {$ELSE}
              vTempValue := Format('%s"%s"', [vTempField, StringToJsonString(bValue.Fields[i].AsString)]);
             {$ENDIF}
@@ -1248,7 +1242,16 @@ Begin
     End;
   {$ENDIF}
   Case JsonModeD Of
-   jmDataware : Result := Format(Result, [vLines]);
+   jmDataware : Begin
+                 If vEncoding = esUtf8 Then
+                  Result := Format(Result, [vLines])
+                 Else
+                 {$IF Defined(HAS_FMX)}
+                  Result := Format(Result, [vLines]);
+                 {$ELSE}
+                  Result := Format(Result, [AnsiString(vLines)]);
+                 {$IFEND}
+                End;
    jmPureJSON,
    jmMongoDB  : Begin
                  If vtagName <> '' Then
@@ -1280,34 +1283,70 @@ Procedure TJSONValue.LoadFromDataset(TableName       : String;
                                      CharSet         : TDatabaseCharSet = csUndefined{$ENDIF});
 Var
  vTagGeral : String;
+ vSizeChar : Integer;
 Begin
  vTypeObject      := toDataset;
  vObjectDirection := odINOUT;
  vObjectValue     := ovDataSet;
  vtagName         := Lowercase(TableName);
  vEncoded         := EncodedValue;
+ {$IFDEF FPC}
+  If CharSet <> csUndefined Then
+   DatabaseCharSet := CharSet;
+ {$ENDIF}
  vTagGeral        := DatasetValues(bValue, DateTimeFormat, JsonModeD, DelimiterFormat);
  {$IFDEF FPC}
   If vEncodingLazarus = Nil Then
    SetEncoding(vEncoding);
-  aValue          := TIdBytes(vEncodingLazarus.GetBytes(vTagGeral));
+  If vEncoding = esUtf8 Then
+   aValue          := TIdBytes(vEncodingLazarus.GetBytes(vTagGeral))
+  Else
+   aValue          := ToBytes(vTagGeral, GetEncodingID(vEncoding));
  {$ELSE}
-  aValue          := ToBytes(vTagGeral, GetEncodingID(vEncoding));
+  {$IF CompilerVersion > 21} // Delphi 2010 pra cima
+   aValue          := ToBytes(vTagGeral, GetEncodingID(vEncoding));
+  {$ELSE}
+   vSizeChar := 1;
+   If vEncoding = esUtf8 Then
+    Begin
+     vSizeChar := 2;
+     SetLength(aValue, Length(vTagGeral) * vSizeChar);
+     move(vTagGeral[InitStrPos], pByteArray(aValue)^, Length(aValue));
+    End
+   Else
+    Begin
+     SetLength(aValue, Length(vTagGeral) * vSizeChar);
+     move(AnsiString(vTagGeral)[InitStrPos], pByteArray(aValue)^, Length(vTagGeral) * vSizeChar);
+    End;
+//   aValue          := ToBytes(vTagGeral, GetEncodingID(vEncoding));
+  {$IFEND}
  {$ENDIF}
  vJsonMode        := JsonModeD;
 End;
 
 Function TJSONValue.ToJSON : String;
 Var
- vTempValue : String;
+ {$IFNDEF FPC}
+  {$IF CompilerVersion > 21}
+   vTempValue : String;
+  {$ELSE}
+   vTempValue : AnsiString;
+  {$IFEND}
+ {$ELSE}
+  vTempValue : String;
+ {$ENDIF}
+ SizeOfString : Integer;
 Begin
  Result := '';
  {$IFDEF FPC}
  If vEncodingLazarus = Nil Then
   SetEncoding(vEncoding);
- If vEncoded Then
-  vTempValue := FormatValue(vEncodingLazarus.GetString(aValue))
- Else If vEncodingLazarus.GetString(aValue) = '' Then
+ If vEncoding = esUtf8 Then
+  vTempValue := vEncodingLazarus.GetString(aValue)
+ Else
+  vTempValue := BytesToString(aValue, GetEncodingID(vEncoding));
+//  vTempValue := FormatValue(vEncodingLazarus.GetString(aValue))
+ If vTempValue = '' Then
   Begin
    If Not(vObjectValue in [ovString,   ovFixedChar, ovWideString, ovFixedWideChar,
                            ovBlob,     ovGraphic,   ovOraBlob,  ovOraClob, ovMemo,
@@ -1317,10 +1356,12 @@ Begin
     vTempValue := FormatValue('');
   End
  Else
-  vTempValue := FormatValue(vEncodingLazarus.GetString(aValue));
+  vTempValue := FormatValue(vTempValue);
  {$ELSE}
  If vEncoded Then
-  vTempValue := FormatValue(BytesToString(aValue, GetEncodingID(vEncoding)))
+  Begin
+   vTempValue := FormatValue(BytesToString(aValue, GetEncodingID(vEncoding)));
+  End
  Else If BytesArrToString(aValue, GetEncodingID(vEncoding)) = '' Then
   Begin
    If Not(vObjectValue in [ovString,   ovFixedChar, ovWideString, ovFixedWideChar,
@@ -1331,7 +1372,17 @@ Begin
     vTempValue := FormatValue('');
   End
  Else
-  vTempValue   := FormatValue(BytesArrToString(aValue, GetEncodingID(vEncoding)));
+  Begin
+   {$IF CompilerVersion > 21} // Delphi 2010 pra cima
+    vTempValue   := FormatValue(BytesArrToString(aValue, GetEncodingID(vEncoding)));
+   {$ELSE} // Delphi 2010 pra cima
+    SizeOfString := Length(aValue);
+    SetString(vTempValue, PChar(@aValue[0]), SizeOfString);
+    While pos(#0, vTempValue) > 0 Do
+     Delete(vTempValue, pos(#0, vTempValue), 1);
+    vTempValue   := FormatValue(vTempValue);
+   {$IFEND} // Delphi 2010 pra cima
+  End;
  {$ENDIF}
  If Not(Pos('"TAGJSON":}', vTempValue) > 0) Then
   Result := vTempValue;
@@ -2274,7 +2325,10 @@ Begin
           End;
          FreeAndNil(bJsonOBJB);
          bJsonOBJB  := bJsonOBJTemp.GetObject(StrToInt(ListFields[i]));
-         vTempValue := TDWJSONObject(bJsonOBJB).pairs[0].Value; // bJsonOBJTemp.get().ToString;
+         If vEncoding = esUtf8 Then
+          vTempValue := UTF8Decode(TDWJSONObject(bJsonOBJB).pairs[0].Value)
+         Else
+          vTempValue := TDWJSONObject(bJsonOBJB).pairs[0].Value;
          If DestDS.Fields[i].DataType In [ftGraphic, ftParadoxOle, ftDBaseOle, ftTypedBinary, ftCursor,
                                           ftDataSet, ftBlob, ftOraBlob, ftOraClob{$IFNDEF FPC}{$IF CompilerVersion > 21},
                                           ftParams, ftStream{$IFEND}{$ENDIF}] Then
@@ -2804,6 +2858,11 @@ Begin
 End;
 
 Procedure TJSONValue.WriteValue(bValue : String);
+Var
+ vSizeChar  : Integer;
+ {$IF Not Defined(HAS_FMX)}
+  vValueAnsi : AnsiString;
+ {$IFEND}
 Begin
  SetLength(aValue, 0);
  If bValue = '' Then
@@ -2814,13 +2873,28 @@ Begin
    If vEncodingLazarus = Nil Then
     SetEncoding(vEncoding);
    If vEncoded Then
-    aValue := TIdBytes(vEncodingLazarus.GetBytes(Format(TJsonStringValue, [bValue])))
+    Begin
+     If vEncoding = esUtf8 Then
+      aValue := TIdBytes(vEncodingLazarus.GetBytes(Format(TJsonStringValue, [bValue])))
+     Else
+      aValue := ToBytes(Format(TJsonStringValue, [bValue]), GetEncodingID(vEncoding))
+    End
    Else
     Begin
      If ((JsonMode = jmDataware) And (vEncoded)) Or Not(vObjectValue = ovObject) Then
-      aValue := TIdBytes(vEncodingLazarus.GetBytes(Format(TJsonStringValue, [bValue])))
+      Begin
+       If vEncoding = esUtf8 Then
+        aValue := TIdBytes(vEncodingLazarus.GetBytes(Format(TJsonStringValue, [bValue])))
+       Else
+        aValue := ToBytes(Format(TJsonStringValue, [bValue]), GetEncodingID(vEncoding));
+      End
      Else
-      aValue := TIdBytes(vEncodingLazarus.GetBytes(bValue));
+      Begin
+       If vEncoding = esUtf8 Then
+        aValue := TIdBytes(vEncodingLazarus.GetBytes(bValue))
+       Else
+        aValue := ToBytes(bValue, GetEncodingID(vEncoding));
+      End;
     End;
    {$ELSE}
    If vEncoded Then
@@ -2838,7 +2912,10 @@ Begin
  Else If vObjectValue in [ovDate, ovTime, ovDateTime, ovTimeStamp, ovOraTimeStamp, ovTimeStampOffset] Then
   Begin
    {$IFDEF FPC}
-    aValue := TIdBytes(vEncodingLazarus.GetBytes(Format(TJsonStringValue, [bValue])));
+    If vEncoding = esUtf8 Then
+     aValue := TIdBytes(vEncodingLazarus.GetBytes(Format(TJsonStringValue, [bValue])))
+    Else
+     aValue := ToBytes(Format(TJsonStringValue, [bValue]), GetEncodingID(vEncoding));
    {$ELSE}
     aValue := ToBytes(Format(TJsonStringValue, [bValue]), GetEncodingID(vEncoding));
    {$ENDIF}
@@ -2846,7 +2923,10 @@ Begin
  Else If vObjectValue in [ovFloat, ovCurrency, ovBCD, ovFMTBcd, ovExtended] Then
   Begin
    {$IFDEF FPC}
-    aValue := TIdBytes(vEncodingLazarus.GetBytes(Format(TJsonStringValue, [bValue])));
+    If vEncoding = esUtf8 Then
+     aValue := TIdBytes(vEncodingLazarus.GetBytes(Format(TJsonStringValue, [bValue])))
+    Else
+     aValue := ToBytes(BuildFloatString(Format(TJsonStringValue, [bValue])), GetEncodingID(vEncoding));
    {$ELSE}
     aValue := ToBytes(BuildFloatString(Format(TJsonStringValue, [bValue])), GetEncodingID(vEncoding));
    {$ENDIF}
@@ -2854,9 +2934,30 @@ Begin
  Else
   Begin
    {$IFDEF FPC}
-    aValue := TIdBytes(vEncodingLazarus.GetBytes(bValue));
+    If vEncoding = esUtf8 Then
+     aValue := TIdBytes(vEncodingLazarus.GetBytes(bValue))
+    Else
+     aValue := ToBytes(bValue, GetEncodingID(vEncoding));
    {$ELSE}
+   {$IF CompilerVersion > 21} // Delphi 2010 pra cima
     aValue := ToBytes(bValue, GetEncodingID(vEncoding));
+   {$ELSE} // Delphi 2010 pra cima
+    vSizeChar := 1;
+    {
+    If vEncoding = esUtf8 Then
+     Begin
+      vSizeChar := 2;
+      SetLength(aValue, Length(bValue) * vSizeChar);
+      move(bValue[InitStrPos], pByteArray(aValue)^, Length(aValue));
+     End
+    Else
+     Begin
+     }
+      vValueAnsi := bValue;
+      SetLength(aValue, Length(vValueAnsi));
+      move(vValueAnsi[InitStrPos], pByteArray(aValue)^, Length(aValue));
+//     End;
+    {$IFEND}
    {$ENDIF}
   End;
 End;
@@ -3217,7 +3318,23 @@ Begin
                           SetValue('0', vEncoded);
                         End
                        Else
-                        SetValue(inttostr(Value), vEncoded);
+                        Begin
+                         {$IFNDEF FPC}
+                          {$if CompilerVersion < 20}
+                           SetValue(inttostr(Value), vEncoded);
+                          {$ELSE}
+                           If vObjectValue <> ovInteger Then
+                            SetValue(IntToStr(Int64(Value)), vEncoded)
+                           Else
+                            SetValue(inttostr(Value), vEncoded);
+                          {$IFEND}
+                         {$ELSE}
+                          If vObjectValue <> ovInteger Then
+                           SetValue(IntToStr(Int64(Value)), vEncoded)
+                          Else
+                           SetValue(inttostr(Value), vEncoded);
+                         {$ENDIF}
+                        End;
                       End;
   ovFloat,
   ovCurrency,
@@ -3305,7 +3422,12 @@ Begin
  vBinary := vObjectValue in [ovBlob, ovGraphic, ovOraBlob, ovOraClob];
  vJSONValue.ObjectValue := vObjectValue;
  If (Encode) And Not(vBinary) Then
-  WriteValue(EncodeStrings(utf8encode(aValue){$IFDEF FPC}, csUndefined{$ENDIF}))
+  Begin
+   If vEncoding = esUtf8 Then
+    WriteValue(EncodeStrings(utf8encode(aValue){$IFDEF FPC}, csUndefined{$ENDIF}))
+   Else
+    WriteValue(EncodeStrings(aValue{$IFDEF FPC}, csUndefined{$ENDIF}))
+  End
  Else
   WriteValue(aValue);
  vJSONValue.vBinary := vBinary;

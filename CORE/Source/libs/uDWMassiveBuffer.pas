@@ -376,7 +376,7 @@ Var
  I : Integer;
 Begin
  For I := TList(Self).Count -1 DownTo 0 Do
-  Self.Delete(I);
+  Delete(I);
 End;
 
 Constructor TMassiveFields.Create(MassiveDataset: TMassiveDataset);
@@ -716,7 +716,10 @@ Procedure TMassiveDatasetBuffer.BuildLine(Dataset             : TRESTDWClientSQL
               FreeAndNil(vStringStream);
              End;
             End
-           Else
+           Else if Field.DataType in [ftDate, ftTime,ftDateTime, ftTimeStamp] then     // ajuste massive
+            Begin
+              MassiveValue.Value := IntToStr(DateTimeToUnix(Field.AsDateTime));
+            End ;                                                                      // ajuste massive
             Begin
              If Trim(Field.AsString) <> '' Then
               MassiveValue.Value := Field.AsString;
@@ -1198,12 +1201,12 @@ Procedure TMassiveDatasetBuffer.FromJSON(Value : String);
 Var
  bJsonOBJ,
  bJsonOBJb,
- bJsonValue  : {$IFDEF POSIX}system.json.TJsonObject; {$ELSE} udwjson.TJsonObject;{$ENDIF}
+ bJsonValue  : {$IFDEF HAS_FMX}system.json.TJsonObject; {$ELSE} udwjson.TJsonObject;{$ENDIF}
  bJsonArray,
  bJsonArrayB,
  bJsonArrayC,
  bJsonArrayD,
- bJsonArrayE  : {$IFDEF POSIX}system.json.TJsonArray; {$ELSE} udwjson.TJsonArray;{$ENDIF}
+ bJsonArrayE  : {$IFDEF HAS_FMX}system.json.TJsonArray; {$ELSE} udwjson.TJsonArray;{$ENDIF}
  MassiveValue : TMassiveValue;
  A, C,
  D, E, I      : Integer;
@@ -1223,7 +1226,7 @@ Var
    End;
  End;
 Begin
- {$IFDEF POSIX}
+ {$IFDEF HAS_UTF8}
   bJsonValue:= system.json.TJsonObject.ParseJSONValue(TEncoding.utf8.GetBytes(Value),0) as system.json.TJsonObject;
  {$ELSE}
   bJsonValue := udwjson.TJsonObject.Create(Value);
@@ -1232,7 +1235,7 @@ Begin
  vMassiveLine.ClearAll;
  vMassiveFields.ClearAll;
  Try
-   {$IFDEF POSIX}
+   {$IFDEF HAS_UTF8}
     vTableName  := removestr(bJsonValue.pairs[4].JsonValue.tostring,'"');  //opt(bJsonValue.names.get(4).ToString).ToString;
     bJsonArray  := bJsonValue.pairs[5].JsonValue as tjsonarray; //  bJsonValue.optJSONArray(bJsonValue.names.get(5).ToString);
    {$ELSE}
@@ -1243,14 +1246,14 @@ Begin
    Begin
     If A = 0 Then //Fields
      Begin
-       {$IFDEF POSIX}
+       {$IFDEF HAS_UTF8}
         bJsonOBJ    := bJsonArray.Items[A] as Tjsonobject; //udwjson.TJsonObject.Create(bJsonArray.get(A).ToString); //bJsonOBJ.names.get(0).ToString);
        {$ELSE}
         bJsonOBJ    := udwjson.TJsonObject.Create(bJsonArray.get(A).ToString); //bJsonOBJ.names.get(0).ToString);
        {$ENDIF}
 
       Try
-        {$IFDEF POSIX}
+        {$IFDEF HAS_UTF8}
         bJsonArrayB := bJsonOBJ.get('fields').JsonValue as Tjsonarray;
         For I := 0 To bJsonArrayB.count - 1 Do
          Begin
@@ -1290,7 +1293,7 @@ Begin
         End;
         {$ENDIF}
       Finally
-        {$IFDEF POSIX}
+        {$IFDEF HAS_UTF8}
          bJsonOBJ:=nil;
         {$ELSE}
          bJsonOBJ.Clean;
@@ -1301,14 +1304,14 @@ Begin
      End
     Else //Data
      Begin
-       {$IFDEF POSIX}
+       {$IFDEF HAS_UTF8}
         bJsonOBJ    := bJsonArray.Items[A] as Tjsonobject; //udwjson.TJsonObject.Create(bJsonArray.get(A).ToString); //bJsonOBJ.names.get(0).ToString);
         bJsonArrayB := bJsonOBJ.get('lines').JsonValue as Tjsonarray;
        {$ELSE}
         bJsonOBJ    := udwjson.TJsonObject.Create(bJsonArray.get(A).ToString); //bJsonOBJ.names.get(0).ToString);
         bJsonArrayB := bJsonOBJ.optJSONArray('lines');
        {$ENDIF}
-       {$IFDEF POSIX}
+       {$IFDEF HAS_UTF8}
        For E := 0 to bJsonArrayB.count -1  Do
        Begin
         bJsonArrayC := bJsonArrayB.items[E] as tjsonarray; // getJSONArray(E);
@@ -1455,7 +1458,7 @@ Begin
      End;
    End;
  Finally
- {$IFDEF POSIX}
+ {$IFDEF HAS_UTF8}
  bJsonValue:=nil;
  {$ELSE}
   bJsonValue.Free;

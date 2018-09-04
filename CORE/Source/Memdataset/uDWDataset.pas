@@ -2888,7 +2888,7 @@ Procedure TVariantArray.Delete;
 var
   I: Integer;
   V: PVarData;
-  List: TIndexList;
+//  List: TIndexList;
 begin
   try
     Assert((FCursor >= 0) and (Length(FData) > FCursor), SVarArrayBounds);
@@ -3170,6 +3170,7 @@ end;
 
 Function TVariantArray.GetFieldDef(Index: Integer): Integer;
 begin
+ Result := -1;
  If length(FFields) > 0 Then
   Result := FFields[Index].FieldDef;
 end;
@@ -3193,6 +3194,7 @@ end;
 
 Function TVariantArray.GetFieldType(Index: Integer): TFieldType;
 begin
+ Result := ftUnknown;
  if Length(FFields) > 0 then
   Result := FFields[Index].FieldType;
 end;
@@ -3258,6 +3260,7 @@ end;
 
 Function TVariantArray.GetRecCount: Integer;
 begin
+ Result := -1;
  If FieldCount > 0 Then
   Result := Length(FData) div FieldCount;
 end;
@@ -3731,7 +3734,7 @@ var
   val: Variant;
   S: string;
   B: Boolean;
-  List: TIndexList;
+//  List: TIndexList;
 begin
   Result := False;
   if Length(FData) = 0 then
@@ -3807,7 +3810,7 @@ var
 var
   I, N: Integer;
   val: Variant;
-  List: TIndexList;
+//  List: TIndexList;
 begin
   Result := NULL;
   if Length(FData) = 0 then
@@ -4641,7 +4644,7 @@ class Function TVariantArraySupport.ConvertFrom(Source: PVariantArray;
 var
   T: TDWCustomDataSet absolute DataSet;
   I, J: Integer;
-  FN, S2: string;
+  FN  : string;
 begin
   Exclude(T.FState, dwsConvertError);
   try
@@ -5052,7 +5055,7 @@ end;
 
 Function TIndexList.IndexOf(RecNo : Integer) : Integer;
 Begin
-
+ Result := -1;
 End;
 
 Procedure TIndexList.Insert(RecNo: Integer);
@@ -5702,6 +5705,7 @@ Function TStreamField.GetAsStream: TStream;
 Var
   ZLibLevel: Integer;
 begin
+ ZLibLevel := 0;
   if not DataSet.IsEmpty then
   begin
     Result := FStream;
@@ -6219,7 +6223,7 @@ Var
   I, P, Row, Sc, Temp: Integer;
   S: AnsiString;
   W: WideString;
-  T: TTimeStamp;
+//  T: TTimeStamp;
   D: TDateTime;
 begin
   Result := False;

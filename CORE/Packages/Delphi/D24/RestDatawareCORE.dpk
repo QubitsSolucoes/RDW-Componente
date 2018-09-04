@@ -1,5 +1,5 @@
 package RestDatawareCORE;
- {$R *.res}
+{$R *.res}
 {$R *.dres}
 {$IFDEF IMPLICITBUILDING This IFDEF should not be used by users}
 {$ALIGN 8}
@@ -30,17 +30,18 @@ package RestDatawareCORE;
 requires
   rtl,
   designide,
+  dcldb,
   dbrtl,
   soaprtl,
   IndySystem,
   IndyProtocols,
   IndyCore,
-  dsnap,
-  dcldb,
   FireDAC,
   FireDACCommonDriver,
   FireDACCommon,
-  fmx;
+  fmx,
+  vcl,
+  vcldb;
 
 contains
   uDWPoolerMethod in '..\..\..\Source\uDWPoolerMethod.pas',
@@ -68,7 +69,9 @@ contains
   uAboutForm in '..\..\..\Source\uAboutForm.pas' {frm_About},
   uDWResponseTranslator in '..\..\..\Source\uDWResponseTranslator.pas',
   uSystemEvents in '..\..\..\Source\libs\uSystemEvents.pas',
-  uRESTDWServerContext in '..\..\..\Source\uRESTDWServerContext.pas';
+  uRESTDWServerContext in '..\..\..\Source\uRESTDWServerContext.pas',
+  dwCGIRunner in '..\..\..\Source\dwCGIRunner.pas',
+  dwISAPIRunner in '..\..\..\Source\dwISAPIRunner.pas';
 
 end.
 

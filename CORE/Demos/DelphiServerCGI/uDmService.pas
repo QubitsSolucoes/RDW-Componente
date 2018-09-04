@@ -72,6 +72,8 @@ TYPE
     procedure DWServerContext1ContextListopenfileReplyRequestStream(
       const Params: TDWParams; var ContentType: string;
       var Result: TMemoryStream);
+    procedure DWServerContext1ContextListangularReplyRequest(
+      const Params: TDWParams; var ContentType, Result: string);
   PRIVATE
     { Private declarations }
     vIDVenda : Integer;
@@ -122,6 +124,20 @@ BEGIN
     END;
   END;
 END;
+
+procedure TServerMethodDM.DWServerContext1ContextListangularReplyRequest(
+  const Params: TDWParams; var ContentType, Result: string);
+var
+ s : TStringlist;
+begin
+ s := TStringlist.Create;
+ Try
+  s.LoadFromFile('.\www\dw_angular.html');
+  Result := s.Text;
+ Finally
+  s.Free;
+ End;
+end;
 
 procedure TServerMethodDM.DWServerContext1ContextListindexReplyRequest(
   const Params: TDWParams; var ContentType, Result: string);
@@ -224,7 +240,10 @@ begin
    JSONValue.LoadFromDataset('employee', FDQuery1, False,  Params.JsonMode, '');
    Result := JSONValue.ToJSON;
   Except
-
+   On E : Exception Do
+    Begin
+     Result := Format('{"Error":"%s"}', [E.Message]);
+    End;
   End;
  Finally
   JSONValue.Free;

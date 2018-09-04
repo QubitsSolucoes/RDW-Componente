@@ -1480,8 +1480,6 @@ object RestDWForm: TRestDWForm
   end
   object RESTServicePooler1: TRESTServicePooler
     Active = False
-    DataCompression = True
-    EncodeStrings = True
     ServicePort = 8082
     ProxyOptions.Port = 8888
     ServerParams.HasAuthentication = True
@@ -1493,8 +1491,10 @@ object RestDWForm: TRestDWForm
     OnLastResponse = RESTServicePooler1LastResponse
     Encoding = esASCII
     ServerContext = 'restdataware'
+    RootPath = '/'
     SSLVerifyMode = [sslvrfPeer]
     SSLVerifyDepth = 0
+    ForceWelcomeAccess = False
     Left = 132
     Top = 192
   end

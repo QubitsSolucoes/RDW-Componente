@@ -772,7 +772,7 @@ object Form2: TForm2
     PoolerName = 'TServerMethodDM.RESTDWPoolerDB1'
     StateConnection.AutoCheck = False
     StateConnection.InTime = 1000
-    RequestTimeOut = 10000
+    RequestTimeOut = 20000
     EncodeStrings = False
     Encoding = esUtf8
     StrsTrim = False
@@ -782,7 +782,7 @@ object Form2: TForm2
     OnWorkBegin = RESTDWDataBase1WorkBegin
     OnWorkEnd = RESTDWDataBase1WorkEnd
     OnStatus = RESTDWDataBase1Status
-    DatabaseCharSet = csUndefined
+    DatabaseCharSet = csWin1252
     ParamCreate = True
     ClientConnectionDefs.Active = False
     left = 136
@@ -1094,7 +1094,7 @@ object Form2: TForm2
     Password = 'testserver'
     ProxyOptions.BasicAuthentication = False
     ProxyOptions.ProxyPort = 0
-    RequestTimeOut = 10000
+    RequestTimeOut = 20000
     ThreadRequest = False
     AllowCookies = False
     HandleRedirects = False

@@ -31,12 +31,12 @@ Type
   Function ExecuteCommand       (SQL              : String;
                                  Var Error        : Boolean;
                                  Var MessageError : String;
-                                 Execute          : Boolean = False) : TJSONValue;Overload;Override;
+                                 Execute          : Boolean = False) : String;Overload;Override;
   Function ExecuteCommand       (SQL              : String;
                                  Params           : TDWParams;
                                  Var Error        : Boolean;
                                  Var MessageError : String;
-                                 Execute          : Boolean = False) : TJSONValue;Overload;Override;
+                                 Execute          : Boolean = False) : String;Overload;Override;
   Function InsertMySQLReturnID  (SQL              : String;
                                  Var Error        : Boolean;
                                  Var MessageError : String) : Integer;Overload;Override;
@@ -664,12 +664,13 @@ function TRESTDWDriverFD.ExecuteCommand(SQL              : String;
                                         Params           : TDWParams;
                                         Var Error        : Boolean;
                                         Var MessageError : String;
-                                        Execute          : Boolean) : TJSONValue;
+                                        Execute          : Boolean) : String;
 Var
  vTempQuery    : TFDQuery;
  A, I          : Integer;
  vParamName    : String;
  vStringStream : TMemoryStream;
+ aResult       : TJSONValue;
  Function GetParamIndex(Params : TFDParams; ParamName : String) : Integer;
  Var
   I : Integer;
@@ -687,7 +688,8 @@ Var
 Begin
  Inherited;
  Error  := False;
- Result := TJSONValue.Create;
+ Result := '';
+ aResult := TJSONValue.Create;
  vTempQuery               := TFDQuery.Create(Owner);
  Try
   vTempQuery.Connection   := vFDConnection;
@@ -874,21 +876,23 @@ Begin
   If Not Execute Then
    Begin
     vTempQuery.Active := True;
-    If Result = Nil Then
-     Result := TJSONValue.Create;
-    Result.Encoding := Encoding;
+    If aResult = Nil Then
+     aResult := TJSONValue.Create;
+    aResult.Encoding := Encoding;
     Try
-     Result.LoadFromDataset('RESULTDATA', vTempQuery, EncodeStringsJSON);
+     aResult.LoadFromDataset('RESULTDATA', vTempQuery, EncodeStringsJSON);
+     Result := aResult.ToJSON;
     Finally
     End;
    End
   Else
    Begin
     vTempQuery.ExecSQL;
-    If Result = Nil Then
-     Result := TJSONValue.Create;
-    Result.SetValue('COMMANDOK');
+    If aResult = Nil Then
+     aResult := TJSONValue.Create;
     vFDConnection.CommitRetaining;
+    aResult.SetValue('COMMANDOK');
+    Result := aResult.ToJSON;
    End;
  Except
   On E : Exception do
@@ -896,15 +900,17 @@ Begin
     Try
      Error        := True;
      MessageError := E.Message;
-     If Result = Nil Then
-      Result := TJSONValue.Create;
-     Result.Encoded := True;
-     Result.SetValue(GetPairJSON('NOK', MessageError));
+     If aResult = Nil Then
+      aResult := TJSONValue.Create;
+     aResult.Encoded := True;
+     aResult.SetValue(GetPairJSON('NOK', MessageError));
+     Result := aResult.ToJSON;
      vFDConnection.RollbackRetaining;
     Except
     End;
    End;
  End;
+ FreeAndNil(aResult);
  vTempQuery.Close;
  vTempQuery.Free;
 End;
@@ -1462,7 +1468,7 @@ Var
         If vFDConnection.InTransaction Then
          vFDConnection.Rollback;
         MessageError := E.Message;
-        Break;
+        Exit;
        End;
      End;
      If B >= CommitRecords Then
@@ -1641,14 +1647,15 @@ End;
 Function TRESTDWDriverFD.ExecuteCommand(SQL              : String;
                                         Var Error        : Boolean;
                                         Var MessageError : String;
-                                        Execute          : Boolean) : TJSONValue;
+                                        Execute          : Boolean) : String;
 Var
  vTempQuery   : TFDQuery;
+ aResult      : TJSONValue;
 Begin
  Inherited;
- Result := Nil;
+ Result := '';
  Error  := False;
- //Result := TJSONValue.Create;
+ aResult := Nil;
  vTempQuery               := TFDQuery.Create(Owner);
  Try
   If Not vFDConnection.Connected Then
@@ -1663,10 +1670,12 @@ Begin
    Begin
     vTempQuery.Open;
     vTempQuery.fetchall;
-    Result         := TJSONValue.Create;
-    Result.Encoding := Encoding;
+    aResult         := TJSONValue.Create;
+    aResult.Encoding := Encoding;
     Try
-     Result.LoadFromDataset('RESULTDATA', vTempQuery, EncodeStringsJSON);
+     aResult.LoadFromDataset('RESULTDATA', vTempQuery, EncodeStringsJSON);
+     Result := aResult.ToJSON;
+     FreeAndNil(aResult);
      Error         := False;
     Finally
     End;
@@ -1675,10 +1684,12 @@ Begin
    Begin
     try
       vTempQuery.ExecSQL;
-      If Result = Nil Then
-       Result := TJSONValue.Create;
-      Result.SetValue('COMMANDOK');
+      If aResult = Nil Then
+       aResult := TJSONValue.Create;
       vFDConnection.CommitRetaining;
+      aResult.SetValue('COMMANDOK');
+      Result := aResult.ToJSON;
+      FreeAndNil(aResult);
       Error         := False;
     Finally
     End;
@@ -1689,19 +1700,17 @@ Begin
     Try
      Error          := True;
      MessageError   := E.Message;
-     If Result = Nil Then
-      Result        := TJSONValue.Create;
-     Result.Encoded := True;
-     Result.SetValue(GetPairJSON('NOK', MessageError));
+     If aResult = Nil Then
+      aResult        := TJSONValue.Create;
+     aResult.Encoded := True;
+     aResult.SetValue(GetPairJSON('NOK', MessageError));
+     Result := aResult.ToJSON;
      vFDConnection.RollbackRetaining;
     Except
     End;
 
    End;
  End;
-   {ico}
-// Result.Free;
-   {ico}
  vTempQuery.Close;
  vTempQuery.Free;
 End;
@@ -1982,6 +1991,7 @@ Begin
                      vFDConnection.DriverName := 'FB';
                      If Assigned(OnPrepareConnection) Then
                       OnPrepareConnection(ConnectionDefs);
+                     ServerParamValue('DriverID',  vFDConnection.DriverName);
                      ServerParamValue('Server',    ConnectionDefs.HostName);
                      ServerParamValue('Port',      IntToStr(ConnectionDefs.dbPort));
                      ServerParamValue('Database',  ConnectionDefs.DatabaseName);
@@ -1993,6 +2003,7 @@ Begin
                      vFDConnection.DriverName := 'IB';
                      If Assigned(OnPrepareConnection) Then
                       OnPrepareConnection(ConnectionDefs);
+                     ServerParamValue('DriverID',  vFDConnection.DriverName);
                      ServerParamValue('Server',    ConnectionDefs.HostName);
                      ServerParamValue('Port',      IntToStr(ConnectionDefs.dbPort));
                      ServerParamValue('Database',  ConnectionDefs.DatabaseName);
@@ -2002,7 +2013,14 @@ Begin
                     End;
     dbtMySQL      : Begin
                      vFDConnection.DriverName := 'MYSQL';
-
+                     If Assigned(OnPrepareConnection) Then
+                      OnPrepareConnection(ConnectionDefs);
+                     ServerParamValue('DriverID',  vFDConnection.DriverName);
+                     ServerParamValue('Server',    ConnectionDefs.HostName);
+                     ServerParamValue('Port',      IntToStr(ConnectionDefs.dbPort));
+                     ServerParamValue('Database',  ConnectionDefs.DatabaseName);
+                     ServerParamValue('User_Name', ConnectionDefs.Username);
+                     ServerParamValue('Password',  ConnectionDefs.Password);
                     End;
     dbtSQLLite    : Begin
                      vFDConnection.DriverName := 'SQLLite';
@@ -2016,7 +2034,7 @@ Begin
                      vFDConnection.DriverName := 'MSSQL';
                      If Assigned(OnPrepareConnection) Then
                       OnPrepareConnection(ConnectionDefs);
-                     ServerParamValue('DriverID',  ConnectionDefs.DriverID);
+                     ServerParamValue('DriverID',  vFDConnection.DriverName);
                      ServerParamValue('Server',    ConnectionDefs.HostName);
                      ServerParamValue('Port',      IntToStr(ConnectionDefs.dbPort));
                      ServerParamValue('Database',  ConnectionDefs.DatabaseName);
@@ -2035,7 +2053,15 @@ Begin
                     End;
     dbtPostgreSQL : Begin
                      vFDConnection.DriverName := 'PG';
-
+                     If Assigned(OnPrepareConnection) Then
+                      OnPrepareConnection(ConnectionDefs);
+                     ServerParamValue('DriverID',  vFDConnection.DriverName);
+                     ServerParamValue('Server',    ConnectionDefs.HostName);
+                     ServerParamValue('Port',      IntToStr(ConnectionDefs.dbPort));
+                     ServerParamValue('Database',  ConnectionDefs.DatabaseName);
+                     ServerParamValue('User_Name', ConnectionDefs.Username);
+                     ServerParamValue('Password',  ConnectionDefs.Password);
+//                     ServerParamValue('Protocol',  Uppercase(ConnectionDefs.Protocol));
                     End;
    End;
   End;

@@ -10,7 +10,7 @@ uses
   FireDAC.Stan.Async, FireDAC.Phys, FireDAC.Phys.FB, Data.DB, FireDAC.Comp.Client,
   FireDAC.Comp.UI, FireDAC.Phys.IBBase, FireDAC.Stan.StorageJSON,
   RestDWServerFormU, URESTDWPoolerDB, URestDWDriverFD, FireDAC.Phys.MSSQLDef,
-  FireDAC.Phys.ODBCBase, FireDAC.Phys.MSSQL, frxClass, frxExportPDF;
+  FireDAC.Phys.ODBCBase, FireDAC.Phys.MSSQL, frxClass, frxExportPDF, uDWAbout;
 
 type
   TServerMethodDM = class(TServerMethodDataModule)
@@ -23,7 +23,6 @@ type
     FDPhysMSSQLDriverLink1: TFDPhysMSSQLDriverLink;
     frxReport1: TfrxReport;
     frxPDFExport1: TfrxPDFExport;
-    procedure ServerMethodDataModuleReplyEvent(SendType: TSendEvent; Context: string; var Params: TDWParams; var Result: string);
     procedure ServerMethodDataModuleCreate(Sender: TObject);
     procedure Server_FDConnectionBeforeConnect(Sender: TObject);
     procedure ServerMethodDataModuleWelcomeMessage(Welcomemsg: string);
@@ -71,7 +70,7 @@ begin
   if Params.ItemsString['SQL'] <> NIL then
   begin
     JSONValue := UDWJSONObject.TJSONValue.Create;
-    JSONValue.Encoding := GetEncoding(Encoding);
+    JSONValue.Encoding := Encoding;
     if Params.ItemsString['SQL'].Value <> '' then
     begin
       if Params.ItemsString['TESTPARAM'] <> NIL then
@@ -125,29 +124,6 @@ end;
 procedure TServerMethodDM.ServerMethodDataModuleCreate(Sender: TObject);
 begin
   RESTDWPoolerDB1.Active := RestDWForm.CbPoolerState.Checked;
-end;
-
-procedure TServerMethodDM.ServerMethodDataModuleReplyEvent(SendType: TSendEvent; Context: string; var Params: TDWParams; var Result: string);
-var
-  JSONObject: TJSONObject;
-begin
-  JSONObject := TJSONObject.Create;
-  case SendType of
-    SePOST:
-      begin
-        if UpperCase(Context) = UpperCase('ConsultaBanco') then
-          Result := ConsultaBanco(Params)
-        else if UpperCase(Context) = Uppercase('RELATORIOA') then
-          Result := DownloadFile(Params)
-        else
-        begin
-          JSONObject.AddPair(TJSONPair.Create('STATUS', 'NOK'));
-          JSONObject.AddPair(TJSONPair.Create('MENSAGEM', 'Método não encontrado'));
-          Result := JSONObject.ToJSON;
-        end;
-      end;
-  end;
-  JSONObject.Free;
 end;
 
 procedure TServerMethodDM.ServerMethodDataModuleWelcomeMessage(Welcomemsg: string);

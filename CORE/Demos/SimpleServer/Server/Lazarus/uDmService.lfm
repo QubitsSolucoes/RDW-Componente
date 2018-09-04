@@ -4,8 +4,8 @@ object ServerMethodDM: TServerMethodDM
   Encoding = esUtf8
   OnReplyEvent = ServerMethodDataModuleReplyEvent
   Height = 251
-  HorizontalOffset = 510
-  VerticalOffset = 207
+  HorizontalOffset = 259
+  VerticalOffset = 126
   Width = 380
   PPI = 96
   object RESTDWPoolerDB1: TRESTDWPoolerDB
@@ -123,6 +123,7 @@ object ServerMethodDM: TServerMethodDM
         Name = 'getemployee'
         OnReplyEvent = DWServerEvents1EventsgetemployeeReplyEvent
       end>
+    ContextName = 'se1'
     left = 192
     top = 104
   end
@@ -154,13 +155,36 @@ object ServerMethodDM: TServerMethodDM
           end>
         ContentType = 'text/html'
         ContextName = 'init'
+        ContextRoutes = [crAll]
         OnReplyRequest = DWServerContext1ContextListinitReplyRequest
       end    
       item
         DWParams = <>
         ContentType = 'text/html'
         ContextName = 'index'
+        ContextRoutes = [crAll]
         OnReplyRequest = DWServerContext1ContextListindexReplyRequest
+      end    
+      item
+        DWParams = <>
+        ContentType = 'text/html'
+        ContextName = 'openfile'
+        ContextRoutes = [crAll]
+        OnReplyRequestStream = DWServerContext1ContextListopenfileReplyRequestStream
+      end    
+      item
+        DWParams = <>
+        ContentType = 'text/html'
+        ContextName = 'php'
+        ContextRoutes = [crAll]
+        OnReplyRequest = DWServerContext1ContextListphpReplyRequest
+      end    
+      item
+        DWParams = <>
+        ContentType = 'text/html'
+        ContextName = 'angular'
+        ContextRoutes = [crAll]
+        OnReplyRequest = DWServerContext1ContextListangularReplyRequest
       end>
     BaseContext = 'www'
     left = 200

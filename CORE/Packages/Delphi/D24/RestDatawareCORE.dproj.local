@@ -1,7 +1,7 @@
 ﻿<?xml version="1.0" encoding="utf-8"?>
 <BorlandProject>
 	<ActiveMobileDevice>
-		<NoProfile iOSSimulator="iPhone5" Android="cc"/>
+		<NoProfile iOSSimulator="iPhone5" Android="38019fd23720a200"/>
 	</ActiveMobileDevice>
 	<Transactions/>
 </BorlandProject>

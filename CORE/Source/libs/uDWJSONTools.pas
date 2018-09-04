@@ -199,7 +199,6 @@ Begin
  End;
  SetLength(Result, p - 1);
 End;
-
 {$IFDEF FPC}
 Function EncodeStringBase64(Const s : String):String;
 Var

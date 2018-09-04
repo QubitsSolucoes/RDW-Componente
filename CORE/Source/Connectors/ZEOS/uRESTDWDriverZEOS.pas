@@ -38,12 +38,12 @@ Type
   Function ExecuteCommand       (SQL              : String;
                                  Var Error        : Boolean;
                                  Var MessageError : String;
-                                 Execute          : Boolean = False) : TJSONValue;Overload;Override;
+                                 Execute          : Boolean = False) : String;Overload;Override;
   Function ExecuteCommand       (SQL              : String;
                                  Params           : TDWParams;
                                  Var Error        : Boolean;
                                  Var MessageError : String;
-                                 Execute          : Boolean = False) : TJSONValue;Overload;Override;
+                                 Execute          : Boolean = False) : String;Overload;Override;
   Function InsertMySQLReturnID  (SQL              : String;
                                  Var Error        : Boolean;
                                  Var MessageError : String) : Integer;Overload;Override;
@@ -666,12 +666,13 @@ function TRESTDWDriverZeos.ExecuteCommand(SQL              : String;
                                         Params           : TDWParams;
                                         Var Error        : Boolean;
                                         Var MessageError : String;
-                                        Execute          : Boolean) : TJSONValue;
+                                        Execute          : Boolean) : String;
 Var
  vTempQuery    : TZQuery;
  A, I          : Integer;
  vParamName    : String;
  vStringStream : TMemoryStream;
+ aResult       : TJSONValue;
  Function GetParamIndex(Params : TParams; ParamName : String) : Integer;
  Var
   I : Integer;
@@ -689,7 +690,7 @@ Var
 Begin
  {$IFNDEF FPC}Inherited;{$ENDIF}
  Error  := False;
- Result := TJSONValue.Create;
+ aResult := TJSONValue.Create;
  vTempQuery               := TZQuery.Create(Owner);
  Try
   vTempQuery.Connection   := vZConnection;
@@ -697,12 +698,8 @@ Begin
   vTempQuery.SQL.Add(SQL);
   If Params <> Nil Then
   Begin
-    if vTempQuery.ParamCheck then
-    begin
-      Try
-      // vTempQuery.Prepare;
-      Except
-      End;
+   If vTempQuery.ParamCheck then
+    Begin
       For I := 0 To Params.Count -1 Do
        Begin
         If vTempQuery.Params.Count > I Then
@@ -812,155 +809,157 @@ Begin
         Else
          Break;
        End;
-     end
-     Else
-      Begin
-       For I := 0 To Params.Count -1 Do
-        begin
+    End
+   Else
+    Begin
+     For I := 0 To Params.Count -1 Do
+      begin
+       {$IFNDEF FPC}
+        {$if CompilerVersion < 21}
+          With vTempQuery.Params.Add do
+        {$ELSE}
+          With vTempQuery.Params.AddParameter do
+        {$IFEND}
+       {$ELSE}
+       With vTempQuery.Params.Add do
+       {$ENDIF}
+        Begin
+         vParamName := Copy(StringReplace(Params[I].ParamName, ',', '', []), 1, Length(Params[I].ParamName));
+         Name := vParamName;
          {$IFNDEF FPC}
-          {$if CompilerVersion < 21}
-            With vTempQuery.Params.Add do
-          {$ELSE}
-            With vTempQuery.Params.AddParameter do
+          {$IF CompilerVersion >= 21}
+          ParamType := ptInput;
+           If Not (ObjectValueToFieldType(Params[I].ObjectValue) in [ftUnknown]) Then
+            DataType := ObjectValueToFieldType(Params[I].ObjectValue)
+           Else
+            DataType := ftString;
           {$IFEND}
-         {$ELSE}
-         With vTempQuery.Params.Add do
          {$ENDIF}
+         If vTempQuery.Params[I].DataType in [ftInteger, ftSmallInt, ftWord, ftLargeint{$IFNDEF FPC}{$IF CompilerVersion >= 21}, ftLongWord{$IFEND}{$ENDIF}] Then
           Begin
-           vParamName := Copy(StringReplace(Params[I].ParamName, ',', '', []), 1, Length(Params[I].ParamName));
-           Name := vParamName;
-           {$IFNDEF FPC}
-            {$IF CompilerVersion >= 21}
-            ParamType := ptInput;
-             If Not (ObjectValueToFieldType(Params[I].ObjectValue) in [ftUnknown]) Then
-              DataType := ObjectValueToFieldType(Params[I].ObjectValue)
-             Else
-              DataType := ftString;
-            {$IFEND}
-           {$ENDIF}
-           If vTempQuery.Params[I].DataType in [ftInteger, ftSmallInt, ftWord, ftLargeint{$IFNDEF FPC}{$IF CompilerVersion >= 21}, ftLongWord{$IFEND}{$ENDIF}] Then
+           If (Params[I].Value <> Null) Then
             Begin
-             If (Params[I].Value <> Null) Then
-              Begin
-               {$IFNDEF FPC}
-                {$IF CompilerVersion < 21}
-               If vTempQuery.Params[I].DataType = ftSmallInt Then
-               begin
-                vTempQuery.Params[I].AsSmallInt := StrToInt(Params[I].Value);
-               end
-               Else
-               begin
-                vTempQuery.Params[I].AsInteger  := StrToInt64(Params[I].Value);
-               end;
-                {$ELSE}
-                // Alterado por: Alexandre Magno - 04/11/2017
-               If vTempQuery.Params[I].DataType in [ftLargeint{$IFNDEF FPC}{$IF CompilerVersion >= 21}, ftLongWord{$IFEND}{$ENDIF}] Then
-               begin
-                vTempQuery.Params[I].AsLargeInt := StrToInt64(Params[I].Value);
-               end
-               else If vTempQuery.Params[I].DataType = ftSmallInt Then
-               begin
-                vTempQuery.Params[I].AsSmallInt := StrToInt(Params[I].Value);
-               end
-               Else
-               begin
-                vTempQuery.Params[I].AsInteger  := StrToInt(Params[I].Value);
-               end;
-               {$IFEND}
-               {$ELSE}
-               // Alterado por: Alexandre Magno - 04/11/2017
-              If vTempQuery.Params[I].DataType in [ftLargeint{$IFNDEF FPC}{$IF CompilerVersion >= 21}, ftLongWord{$IFEND}{$ENDIF}] Then
-              begin
-               vTempQuery.Params[I].AsLargeInt := StrToInt64(Params[I].Value);
-              end
-              else If vTempQuery.Params[I].DataType = ftSmallInt Then
-              begin
-               vTempQuery.Params[I].AsSmallInt := StrToInt(Params[I].Value);
-              end
-              Else
-              begin
-               vTempQuery.Params[I].AsInteger  := StrToInt(Params[I].Value);
-              end;
-              {$ENDIF}
-              End
+             {$IFNDEF FPC}
+              {$IF CompilerVersion < 21}
+             If vTempQuery.Params[I].DataType = ftSmallInt Then
+             begin
+              vTempQuery.Params[I].AsSmallInt := StrToInt(Params[I].Value);
+             end
              Else
-              vTempQuery.Params[I].Clear;
-            End
-            Else If vTempQuery.Params[I].DataType in [ftFloat,   ftCurrency, ftBCD{$IFNDEF FPC}{$if CompilerVersion >= 21}, ftSingle{$IFEND}{$ENDIF}] Then
-             Begin
-              If (Params[I].Value <> Null) Then
-               vTempQuery.Params[I].AsFloat  := StrToFloat(BuildFloatString(Params[I].Value))
-              Else
-               vTempQuery.Params[I].Clear;
-             End
-            Else If vTempQuery.Params[I].DataType in [ftDate, ftTime, ftDateTime, ftTimeStamp] Then
-             Begin
-              If (Params[I].Value <> Null) Then
-               vTempQuery.Params[I].AsDateTime  := Params[I].AsDateTime
-              Else
-               vTempQuery.Params[I].Clear;
-             End  //Tratar Blobs de Parametros...
-            Else If vTempQuery.Params[I].DataType in [ftBytes, ftVarBytes, ftBlob,
-                                                      ftGraphic, ftOraBlob, ftOraClob,
-                                                      ftMemo {$IFNDEF FPC}
-                                                              {$IF CompilerVersion > 21}
-                                                               , ftWideMemo
-                                                              {$IFEND}
-                                                             {$ENDIF}] Then
-             Begin
-              vStringStream := TMemoryStream.Create;
-              Try
-               Params[I].SaveToStream(vStringStream);
-               vStringStream.Position := 0;
-               If vStringStream.Size > 0 Then
-                vTempQuery.Params[I].LoadFromStream(vStringStream, ftBlob);
-              Finally
-               FreeAndNil(vStringStream);
-              End;
-             End
-            Else If vTempQuery.Params[I].DataType in [{$IFNDEF FPC}{$if CompilerVersion >= 21} // Delphi 2010 pra baixo
-                                                      ftFixedChar, ftFixedWideChar,{$IFEND}{$ENDIF}
-                                                      ftString,    ftWideString]    Then
-             Begin
-              If (Params[I].Value <> '') And
-                 (Params[I].Value <> Null) Then
-               vTempQuery.Params[I].AsString := Params[I].Value
-              Else
-               vTempQuery.Params[I].Clear;
-             End
+             begin
+              vTempQuery.Params[I].AsInteger  := StrToInt64(Params[I].Value);
+             end;
+              {$ELSE}
+              // Alterado por: Alexandre Magno - 04/11/2017
+             If vTempQuery.Params[I].DataType in [ftLargeint{$IFNDEF FPC}{$IF CompilerVersion >= 21}, ftLongWord{$IFEND}{$ENDIF}] Then
+             begin
+              vTempQuery.Params[I].AsLargeInt := StrToInt64(Params[I].Value);
+             end
+             else If vTempQuery.Params[I].DataType = ftSmallInt Then
+             begin
+              vTempQuery.Params[I].AsSmallInt := StrToInt(Params[I].Value);
+             end
+             Else
+             begin
+              vTempQuery.Params[I].AsInteger  := StrToInt(Params[I].Value);
+             end;
+             {$IFEND}
+             {$ELSE}
+             // Alterado por: Alexandre Magno - 04/11/2017
+            If vTempQuery.Params[I].DataType in [ftLargeint{$IFNDEF FPC}{$IF CompilerVersion >= 21}, ftLongWord{$IFEND}{$ENDIF}] Then
+            begin
+             vTempQuery.Params[I].AsLargeInt := StrToInt64(Params[I].Value);
+            end
+            else If vTempQuery.Params[I].DataType = ftSmallInt Then
+            begin
+             vTempQuery.Params[I].AsSmallInt := StrToInt(Params[I].Value);
+            end
             Else
-             vTempQuery.Params[I].Value    := Params[I].Value;
-          End;
+            begin
+             vTempQuery.Params[I].AsInteger  := StrToInt(Params[I].Value);
+            end;
+            {$ENDIF}
+            End
+           Else
+            vTempQuery.Params[I].Clear;
+          End
+          Else If vTempQuery.Params[I].DataType in [ftFloat,   ftCurrency, ftBCD{$IFNDEF FPC}{$if CompilerVersion >= 21}, ftSingle{$IFEND}{$ENDIF}] Then
+           Begin
+            If (Params[I].Value <> Null) Then
+             vTempQuery.Params[I].AsFloat  := StrToFloat(BuildFloatString(Params[I].Value))
+            Else
+             vTempQuery.Params[I].Clear;
+           End
+          Else If vTempQuery.Params[I].DataType in [ftDate, ftTime, ftDateTime, ftTimeStamp] Then
+           Begin
+            If (Params[I].Value <> Null) Then
+             vTempQuery.Params[I].AsDateTime  := Params[I].AsDateTime
+            Else
+             vTempQuery.Params[I].Clear;
+           End  //Tratar Blobs de Parametros...
+          Else If vTempQuery.Params[I].DataType in [ftBytes, ftVarBytes, ftBlob,
+                                                    ftGraphic, ftOraBlob, ftOraClob,
+                                                    ftMemo {$IFNDEF FPC}
+                                                            {$IF CompilerVersion > 21}
+                                                             , ftWideMemo
+                                                            {$IFEND}
+                                                           {$ENDIF}] Then
+           Begin
+            vStringStream := TMemoryStream.Create;
+            Try
+             Params[I].SaveToStream(vStringStream);
+             vStringStream.Position := 0;
+             If vStringStream.Size > 0 Then
+              vTempQuery.Params[I].LoadFromStream(vStringStream, ftBlob);
+            Finally
+             FreeAndNil(vStringStream);
+            End;
+           End
+          Else If vTempQuery.Params[I].DataType in [{$IFNDEF FPC}{$if CompilerVersion >= 21} // Delphi 2010 pra baixo
+                                                    ftFixedChar, ftFixedWideChar,{$IFEND}{$ENDIF}
+                                                    ftString,    ftWideString]    Then
+           Begin
+            If (Params[I].Value <> '') And
+               (Params[I].Value <> Null) Then
+             vTempQuery.Params[I].AsString := Params[I].Value
+            Else
+             vTempQuery.Params[I].Clear;
+           End
+          Else
+           vTempQuery.Params[I].Value    := Params[I].Value;
         End;
       End;
+    End;
   End;
   If Not Execute Then
    Begin
     vTempQuery.Active := True;
-    If Result = Nil Then
-     Result := TJSONValue.Create;
-    Result.Encoded         := EncodeStringsJSON;
-    Result.Encoding        := Encoding;
+    If aResult = Nil Then
+     aResult := TJSONValue.Create;
+    aResult.Encoded         := EncodeStringsJSON;
+    aResult.Encoding        := Encoding;
     {$IFDEF FPC}
-     Result.DatabaseCharSet := DatabaseCharSet;
+     aResult.DatabaseCharSet := DatabaseCharSet;
     {$ENDIF}
     Try
-     Result.LoadFromDataset('RESULTDATA', vTempQuery, EncodeStringsJSON);
+     aResult.LoadFromDataset('RESULTDATA', vTempQuery, EncodeStringsJSON);
+     Result := aResult.ToJson;
     Finally
     End;
    End
   Else
    Begin
     vTempQuery.ExecSQL;
-    If Result = Nil Then
-     Result := TJSONValue.Create;
-    Result.Encoded         := True;
-    Result.Encoding        := Encoding;
+    If aResult = Nil Then
+     aResult := TJSONValue.Create;
+    aResult.Encoded         := True;
+    aResult.Encoding        := Encoding;
     {$IFDEF FPC}
-     Result.DatabaseCharSet := DatabaseCharSet;
+     aResult.DatabaseCharSet := DatabaseCharSet;
     {$ENDIF}
-    Result.SetValue('COMMANDOK');
     vZConnection.Commit;
+    aResult.SetValue('COMMANDOK');
+    Result := aResult.ToJSON;
    End;
  Except
   On E : Exception do
@@ -968,19 +967,22 @@ Begin
     Try
      Error        := True;
      MessageError := E.Message;
-     If Result = Nil Then
-      Result := TJSONValue.Create;
-     Result.Encoded         := True;
-     Result.Encoding        := Encoding;
+     If aResult = Nil Then
+      aResult := TJSONValue.Create;
+     aResult.Encoded         := True;
+     aResult.Encoding        := Encoding;
      {$IFDEF FPC}
-      Result.DatabaseCharSet := DatabaseCharSet;
+      aResult.DatabaseCharSet := DatabaseCharSet;
      {$ENDIF}
-     Result.SetValue(GetPairJSON('NOK', MessageError));
+     aResult.SetValue(GetPairJSON('NOK', MessageError));
+     Result := aResult.ToJson;
      vZConnection.Rollback;
     Except
     End;
    End;
  End;
+ If Assigned(aResult) Then
+  FreeAndNil(aResult);
  vTempQuery.Close;
  vTempQuery.Free;
 End;
@@ -1820,16 +1822,17 @@ Begin
 End;
 
 Function TRESTDWDriverZeos.ExecuteCommand(SQL              : String;
-                                        Var Error        : Boolean;
-                                        Var MessageError : String;
-                                        Execute          : Boolean) : TJSONValue;
+                                          Var Error        : Boolean;
+                                          Var MessageError : String;
+                                          Execute          : Boolean) : String;
 Var
  vTempQuery   : TZQuery;
+ aResult      : TJSONValue;
 Begin
  {$IFNDEF FPC}Inherited;{$ENDIF}
- Result := Nil;
- Error  := False;
- //Result := TJSONValue.Create;
+ aResult := Nil;
+ Result  := '';
+ Error   := False;
  vTempQuery               := TZQuery.Create(Owner);
  Try
   If Not vZConnection.Connected Then
@@ -1840,59 +1843,58 @@ Begin
   If Not Execute Then
    Begin
     vTempQuery.Open;
-    Result         := TJSONValue.Create;
+    aResult         := TJSONValue.Create;
     Try
-     Result.Encoded         := EncodeStringsJSON;
-     Result.Encoding        := Encoding;
+     aResult.Encoded         := EncodeStringsJSON;
+     aResult.Encoding        := Encoding;
      {$IFDEF FPC}
-      Result.DatabaseCharSet := DatabaseCharSet;
+      aResult.DatabaseCharSet := DatabaseCharSet;
      {$ENDIF}
-     Result.LoadFromDataset('RESULTDATA', vTempQuery, EncodeStringsJSON);
+     aResult.LoadFromDataset('RESULTDATA', vTempQuery, EncodeStringsJSON);
      Error         := False;
+     Result        := aResult.ToJson;
+     FreeAndNil(aResult);
     Finally
     End;
    End
   Else
    Begin
-    try
-      vTempQuery.ExecSQL;
-      If Result = Nil Then
-       Result := TJSONValue.Create;
-      Result.Encoded         := True;
-      Result.Encoding        := Encoding;
-      {$IFDEF FPC}
-       Result.DatabaseCharSet := DatabaseCharSet;
-      {$ENDIF}
-      Result.SetValue('COMMANDOK');
-      vZConnection.Commit;
-      Error         := False;
-    finally
-    end;
-
+    aResult := TJSONValue.Create;
+    Try
+     vTempQuery.ExecSQL;
+     aResult.Encoded         := True;
+     aResult.Encoding        := Encoding;
+     {$IFDEF FPC}
+      aResult.DatabaseCharSet := DatabaseCharSet;
+     {$ENDIF}
+     vZConnection.Commit;
+     Error         := False;
+     Result := aResult.ToJSON;
+     aResult.SetValue('COMMANDOK');
+    Finally
+     FreeAndNil(aResult);
+    End;
    End;
  Except
   On E : Exception do
    Begin
+    aResult        := TJSONValue.Create;
     Try
      Error          := True;
      MessageError   := E.Message;
-     If Result = Nil Then
-      Result        := TJSONValue.Create;
-     Result.Encoded         := True;
-     Result.Encoding        := Encoding;
+     aResult.Encoded         := True;
+     aResult.Encoding        := Encoding;
      {$IFDEF FPC}
-      Result.DatabaseCharSet := DatabaseCharSet;
+      aResult.DatabaseCharSet := DatabaseCharSet;
      {$ENDIF}
-     Result.SetValue(GetPairJSON('NOK', MessageError));
+     aResult.SetValue(GetPairJSON('NOK', MessageError));
      vZConnection.Rollback;
+     Result := aResult.ToJSON;
     Except
     End;
-
+    FreeAndNil(aResult);
    End;
  End;
-   {ico}
-// Result.Free;
-   {ico}
  vTempQuery.Close;
  vTempQuery.Free;
 End;

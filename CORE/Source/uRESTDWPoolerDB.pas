@@ -205,7 +205,7 @@ Type
   vOnBeforeConnection  : TOnEventBeforeConnection;   //Evento antes de Connectar o Database
   vAutoCheckData       : TAutoCheckData;             //Autocheck de Conexão
   vTimeOut             : Integer;
-  VEncondig            : TEncodeSelect;              //Enconding se usar CORS usar UTF8 - Alexandre Abade
+  vEncoding            : TEncodeSelect;              //Enconding se usar CORS usar UTF8 - Alexandre Abade
   vContentex           : String;                    //RestContexto - Alexandre Abade
   vStrsTrim,
   vStrsEmpty2Null,
@@ -280,7 +280,7 @@ Type
   Property StateConnection      : TAutoCheckData           Read vAutoCheckData        Write vAutoCheckData;     //Autocheck da Conexão
   Property RequestTimeOut       : Integer                  Read vTimeOut              Write vTimeOut;           //Timeout da Requisição
   Property EncodeStrings        : Boolean                  Read vEncodeStrings        Write vEncodeStrings;
-  Property Encoding             : TEncodeSelect            Read VEncondig             Write VEncondig;          //Encoding da string
+  Property Encoding             : TEncodeSelect            Read vEncoding             Write vEncoding;          //Encoding da string
   Property Context              : string                   Read vContentex            Write vContentex;         //Contexto
   Property StrsTrim             : Boolean                  Read vStrsTrim             Write vStrsTrim;
   Property StrsEmpty2Null       : Boolean                  Read vStrsEmpty2Null       Write vStrsEmpty2Null;
@@ -530,6 +530,7 @@ End;
 Type
  TRESTDWPoolerList = Class(TDWComponent)
  Private
+  vEncoding            : TEncodeSelect;
   vAccessTag,
   vWelcomeMessage,
   vPoolerPrefix,                                     //Prefixo do WS
@@ -562,6 +563,7 @@ Type
   Property PoolerPrefix       : String                   Read vPoolerPrefix       Write vPoolerPrefix;      //Prefixo do WebService REST
   Property Poolers            : TStringList              Read vPoolerList;
   Property AccessTag          : String                   Read vAccessTag          Write vAccessTag;
+  Property Encoding           : TEncodeSelect            Read vEncoding             Write vEncoding;          //Encoding da string
  End;
 
 Type
@@ -592,12 +594,12 @@ Type
   Function ExecuteCommand         (SQL              : String;
                                    Var Error        : Boolean;
                                    Var MessageError : String;
-                                   Execute          : Boolean = False) : TJSONValue;Overload;Virtual;Abstract;
+                                   Execute          : Boolean = False) : String;Overload;Virtual;Abstract;
   Function ExecuteCommand         (SQL              : String;
                                    Params           : TDWParams;
                                    Var Error        : Boolean;
                                    Var MessageError : String;
-                                   Execute          : Boolean = False) : TJSONValue;Overload;Virtual;Abstract;
+                                   Execute          : Boolean = False) : String;Overload;Virtual;Abstract;
   Function InsertMySQLReturnID    (SQL              : String;
                                    Var Error        : Boolean;
                                    Var MessageError : String)          : Integer;   Overload;Virtual;Abstract;
@@ -657,12 +659,12 @@ Type
   Function ExecuteCommand(SQL        : String;
                           Var Error  : Boolean;
                           Var MessageError : String;
-                          Execute    : Boolean = False) : TJSONValue;Overload;
+                          Execute    : Boolean = False) : String;Overload;
   Function ExecuteCommand(SQL              : String;
                           Params           : TDWParams;
                           Var Error        : Boolean;
                           Var MessageError : String;
-                          Execute          : Boolean = False) : TJSONValue;Overload;
+                          Execute          : Boolean = False) : String;Overload;
   Function InsertMySQLReturnID(SQL              : String;
                                Var Error        : Boolean;
                                Var MessageError : String) : Integer;Overload;
@@ -818,9 +820,9 @@ End;
 Function TRESTDWPoolerDB.ExecuteCommand(SQL        : String;
                                       Var Error  : Boolean;
                                       Var MessageError : String;
-                                      Execute    : Boolean = False) : TJSONValue;
+                                      Execute    : Boolean = False) : String;
 Begin
-  Result := nil;
+  Result := '';
  If vRESTDriver <> Nil Then
   Begin
    vRESTDriver.vStrsTrim          := vStrsTrim;
@@ -842,9 +844,9 @@ Function TRESTDWPoolerDB.ExecuteCommand(SQL              : String;
                                         Params           : TDWParams;
                                         Var Error        : Boolean;
                                         Var MessageError : String;
-                                        Execute          : Boolean = False) : TJSONValue;
+                                        Execute          : Boolean = False) : String;
 Begin
- Result := Nil;
+ Result := '';
  If vRESTDriver <> Nil Then
   Begin
    vRESTDriver.vStrsTrim          := vStrsTrim;
@@ -1131,7 +1133,7 @@ Begin
  vRESTConnectionDB.Port           := vPoolerPort;
  vRESTConnectionDB.Compression    := vCompression;
  vRESTConnectionDB.TypeRequest    := VtypeRequest;
- vRESTConnectionDB.Encoding       := VEncondig;
+ vRESTConnectionDB.Encoding       := vEncoding;
  vRESTConnectionDB.EncodeStrings  := EncodeStrings;
  vRESTConnectionDB.OnWork         := vOnWork;
  vRESTConnectionDB.OnWorkBegin    := vOnWorkBegin;
@@ -1143,7 +1145,7 @@ Begin
  {$ENDIF}
  Try
   If Params.Count > 0 Then
-   DWParams     := GetDWParams(Params, vEncondig)
+   DWParams     := GetDWParams(Params, vEncoding)
   Else
    DWParams     := Nil;
   LDataSetList := vRESTConnectionDB.ApplyUpdates(Massive,      vRestPooler,
@@ -1245,7 +1247,7 @@ Begin
  vRESTConnectionDB.Port           := vPoolerPort;
  vRESTConnectionDB.Compression    := vCompression;
  vRESTConnectionDB.TypeRequest     := VtypeRequest;
- vRESTConnectionDB.Encoding      := VEncondig;
+ vRESTConnectionDB.Encoding      := vEncoding;
  vRESTConnectionDB.OnWork        := vOnWork;
  vRESTConnectionDB.OnWorkBegin   := vOnWorkBegin;
  vRESTConnectionDB.OnWorkEnd     := vOnWorkEnd;
@@ -1257,7 +1259,7 @@ Begin
  Try
   If Params.Count > 0 Then
    Begin
-    DWParams     := GetDWParams(Params, vEncondig);
+    DWParams     := GetDWParams(Params, vEncoding);
     LDataSetList := vRESTConnectionDB.InsertValue(vRestPooler,
                                                   vRestURL, GetLineSQL(SQL),
                                                   DWParams, Error,
@@ -1359,7 +1361,7 @@ Begin
  vRESTConnectionDB.Port             := vPoolerPort;
  vRESTConnectionDB.Compression      := vCompression;
  vRESTConnectionDB.TypeRequest      := VtypeRequest;
- vRESTConnectionDB.Encoding         := VEncondig;
+ vRESTConnectionDB.Encoding         := vEncoding;
  vRESTConnectionDB.AccessTag        := vAccessTag;
  {$IFNDEF FPC}
   vRESTConnectionDB.OnWork          := vOnWork;
@@ -1382,7 +1384,7 @@ Begin
     JSONValue := TJSONValue.Create;
     Try
      JSONValue.Encoded  := True;
-     JSONValue.Encoding := VEncondig;
+     JSONValue.Encoding := vEncoding;
      JSONValue.LoadFromJSON(vLinesDS);
      vJsonLine := JSONValue.value;
      FreeAndNil(JSONValue);
@@ -1394,7 +1396,7 @@ Begin
        For I := 0 To bJsonArray.Length - 1 Do
         Begin
          JSONValue := TJSONValue.Create;
-         JSONValue.Encoding := VEncondig;
+         JSONValue.Encoding := vEncoding;
          JSONValue.LoadFromJSON(bJsonArray.optJSONObject(I).ToString);
          JSONValue.Encoded := True;
          JSONValue.WriteToDataset(dtFull, JSONValue.ToJSON, TRESTDWClientSQL(Datasets[I]));
@@ -1406,7 +1408,7 @@ Begin
      For I := 0 To bJsonArray.Length - 1 Do
       Begin
        JSONValue := TJSONValue.Create;
-       JSONValue.Encoding := VEncondig;
+       JSONValue.Encoding := vEncoding;
        JSONValue.LoadFromJSON(bJsonArray.optJSONObject(I).ToString);
        JSONValue.Encoded := True;
        JSONValue.WriteToDataset(dtFull, JSONValue.ToJSON, TRESTDWClientSQL(Datasets[I]));
@@ -1418,7 +1420,7 @@ Begin
      For I := 0 To bJsonArray.Length - 1 Do
       Begin
        JSONValue := TJSONValue.Create;
-       JSONValue.Encoding := VEncondig;
+       JSONValue.Encoding := vEncoding;
        JSONValue.LoadFromJSON(bJsonArray.optJSONObject(I).ToString);
        JSONValue.Encoded := True;
        JSONValue.WriteToDataset(dtFull, JSONValue.ToJSON, TRESTDWClientSQL(Datasets[I]));
@@ -1484,7 +1486,7 @@ Begin
  vRESTConnectionDB.Port           := vPoolerPort;
  vRESTConnectionDB.Compression    := vCompression;
  vRESTConnectionDB.TypeRequest    := VtypeRequest;
- vRESTConnectionDB.Encoding       := VEncondig;
+ vRESTConnectionDB.Encoding       := vEncoding;
  vRESTConnectionDB.EncodeStrings  := EncodeStrings;
  vRESTConnectionDB.OnWork         := vOnWork;
  vRESTConnectionDB.OnWorkBegin    := vOnWorkBegin;
@@ -1497,7 +1499,7 @@ Begin
  Try
   If Params.Count > 0 Then
    Begin
-    DWParams     := GetDWParams(Params, vEncondig);
+    DWParams     := GetDWParams(Params, vEncoding);
     LDataSetList := vRESTConnectionDB.ExecuteCommandJSON(vRestPooler,
                                                          vRestURL, GetLineSQL(SQL),
                                                          DWParams, Error,
@@ -1584,6 +1586,7 @@ Begin
  vConnection.Compression    := vCompression;
  vConnection.TypeRequest    := VtypeRequest;
  vConnection.AccessTag      := vAccessTag;
+ vConnection.Encoding       := Encoding;
  Result := TStringList.Create;
  Try
   vTempList := vConnection.GetPoolerList(vRestURL, vTimeOut, vLogin, vPassword);
@@ -1617,6 +1620,7 @@ Begin
  vConnection.Compression    := vCompression;
  vConnection.TypeRequest    := VtypeRequest;
  vConnection.AccessTag      := vAccessTag;
+ vConnection.Encoding       := Encoding;
  Result := TStringList.Create;
  Try
   vTempList := vConnection.GetServerEvents(vRestURL, vTimeOut, vLogin, vPassword);
@@ -1651,6 +1655,7 @@ Begin
  vProxy                    := False;
  vProxyOptions             := TProxyOptions.Create;
  vPoolerList               := TStringList.Create;
+ vEncoding                 := esUtf8;
 End;
 
 Constructor TRESTDWDataBase.Create(AOwner : TComponent);
@@ -1674,12 +1679,12 @@ Begin
  vTimeOut                  := 10000;
  {$IFNDEF FPC}
  {$IF CompilerVersion > 21}
-  vEncondig                := esUtf8;
+  vEncoding                := esUtf8;
  {$ELSE}
-  vEncondig                := esAscii;
+  vEncoding                := esAscii;
  {$IFEND}
  {$ELSE}
-  vEncondig                := esUtf8;
+  vEncoding                := esUtf8;
  {$ENDIF}
  vContentex                := '';
  vStrsTrim                 := False;
@@ -1730,7 +1735,7 @@ Begin
      vRESTConnectionDB.Port             := vPoolerPort;
      vRESTConnectionDB.Compression      := vCompression;
      vRESTConnectionDB.TypeRequest      := VtypeRequest;
-     vRESTConnectionDB.Encoding         := VEncondig;
+     vRESTConnectionDB.Encoding         := vEncoding;
      vRESTConnectionDB.AccessTag        := vAccessTag;
      {$IFNDEF FPC}
      vRESTConnectionDB.OnWork          := vOnWork;
@@ -1773,6 +1778,7 @@ Begin
  vConnection.Host           := vRestWebService;
  vConnection.Port           := vPoolerPort;
  vConnection.AccessTag      := vAccessTag;
+ vConnection.Encoding       := Encoding;
  Try
   vPoolerList.Clear;
   vPoolerList.Assign(vConnection.GetPoolerList(vPoolerPrefix, 3000, vLogin, vPassword));
@@ -1794,13 +1800,14 @@ Begin
  vConnection.Port           := vPoolerPort;
  vConnection.Compression    := vCompression;
  vConnection.EncodeStrings  := EncodeStrings;
+ vConnection.Encoding       := Encoding;
  vConnection.AccessTag      := vAccessTag;
  {$IFNDEF FPC}
   vConnection.OnWork        := vOnWork;
   vConnection.OnWorkBegin   := vOnWorkBegin;
   vConnection.OnWorkEnd     := vOnWorkEnd;
   vConnection.OnStatus      := vOnStatus;
-  vConnection.Encoding      := VEncondig;
+  vConnection.Encoding      := vEncoding;
  {$ELSE}
   vConnection.OnWork          := vOnWork;
   vConnection.OnWorkBegin     := vOnWorkBegin;

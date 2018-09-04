@@ -42,11 +42,19 @@ uses
    {$if CompilerVersion > 21}
     ToolsApi, vcl.Graphics, DMForm, DesignWindows, DesignEditors, DBReg, DSDesign,
     DesignIntf, ExptIntf, Classes, uDWResponseTranslator, uRESTDWBase, uRESTDWPoolerDB,
-    uDWDatamodule, uDWMassiveBuffer, uRESTDWServerEvents, uRESTDWServerContext, Db, ColnEdit;
+    uDWDatamodule, uDWMassiveBuffer, uRESTDWServerEvents, uRESTDWServerContext, Db,
+    {$IF Defined(HAS_FMX)}
+     {$IFDEF WINDOWS}
+     dwISAPIRunner, dwCGIRunner,
+     {$ENDIF}
+    {$ELSE}
+     dwISAPIRunner, dwCGIRunner,
+    {$IFEND} ColnEdit;
    {$ELSE}
     ToolsApi, Graphics, DMForm, DesignWindows, DesignEditors, DBReg, DesignIntf,
     ExptIntf, Classes, uDWResponseTranslator, uRESTDWBase, uRESTDWPoolerDB,
-    uDWDatamodule, uDWMassiveBuffer, uRESTDWServerEvents, uRESTDWServerContext, Db, DbTables, DSDesign, ColnEdit;
+    uDWDatamodule, uDWMassiveBuffer, uRESTDWServerEvents, uRESTDWServerContext, Db, DbTables,
+    DSDesign, dwISAPIRunner, dwCGIRunner, ColnEdit;
    {$IFEND}
   {$ENDIF}
 
@@ -343,8 +351,15 @@ Begin
  {$ELSE}
   FormEditingHook.RegisterDesignerBaseClass(TServerMethodDataModule);
  {$ENDIF}
- RegisterComponents('REST Dataware - Service',     [TRESTServicePooler, TRESTDWServiceNotification, TDWServerContext, TDWServerEvents,
-                                                    TRESTServiceCGI,    TDWClientEvents, TRESTClientPooler]);
+ RegisterComponents('REST Dataware - Service',     [TRESTServicePooler,
+                                                    {$IFDEF FPC}
+                                                    {$ELSE}
+                                                     TDWISAPIRunner,
+                                                     TDWCGIRunner,
+                                                    {$ENDIF}
+                                                    TRESTServiceCGI,
+                                                    TDWServerContext,          TDWServerEvents, TDWClientEvents, TRESTClientPooler,
+                                                    TRESTDWServiceNotification]);
  RegisterComponents('REST Dataware - Tools',       [TDWClientREST,      TDWResponseTranslator]);
  RegisterComponents('REST Dataware - CORE - DB',   [TRESTDWPoolerDB,    TRESTDWDataBase,   TRESTDWClientSQL, TDWMemtable,     TDWMassiveSQLCache,
                                                     TRESTDWStoredProc,  TRESTDWPoolerList, TDWMassiveCache]);

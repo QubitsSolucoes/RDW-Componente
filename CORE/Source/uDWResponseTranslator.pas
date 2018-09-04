@@ -60,11 +60,10 @@ Type
  TPrepareGet   = Procedure (Var AUrl          : String;
                             Var AHeaders      : TStringList) Of Object;
  TPrepareEvent = Procedure (Var AUrl          : String;
-                            Var AContent      : TStream;
                             Var AHeaders      : TStringList) Of Object;
  TAfterRequest = Procedure (AUrl              : String;
                             ResquestType      : TResquestType;
-                            AResponse         : TStringStream)  Of Object;
+                            AResponse         : TStream)  Of Object;
 
 
 Type
@@ -119,6 +118,7 @@ Type
   //Variáveis, Procedures e  Funções Protegidas
   HttpRequest          : TIdHTTP;
   vRSCharset           : TEncodeSelect;
+  vRedirectMaximum     : Integer;
   Procedure SetParams      (Const aHttpRequest : TIdHTTP);
   Procedure SetOnWork      (Value              : TOnWork);
   Procedure SetOnWorkBegin (Value              : TOnWorkBegin);
@@ -166,7 +166,11 @@ Type
                                                   AOk         : Boolean;
                                                   ADepth,
                                                   AError      : Integer): Boolean;Overload;
-  Procedure SetHeaders (AHeaders  : TStringList);
+  Procedure SetHeaders (AHeaders       : TStringList;
+                        Var SendParams : TIdMultipartFormDataStream);Overload;
+  Procedure SetHeaders (AHeaders       : TStringList);Overload;
+  Procedure SetRawHeaders(AHeaders       : TStringList;
+                          Var SendParams : TIdMultipartFormDataStream);
   Procedure SetUseSSL  (Value     : Boolean);
   Procedure CopyStringList(const Source, Dest: TStringList);
   Procedure SetDefaultCustomHeader(Value: TStrings);
@@ -176,24 +180,30 @@ Type
   Procedure   Get      (AUrl            : String        = '';
                         CustomHeaders   : TStringList   = Nil;
                         Const AResponse : TStringStream = Nil;
-                        IgnoreEvents    : Boolean       = False);
+                        IgnoreEvents    : Boolean       = False);Overload;
+  Procedure   Get      (AUrl            : String        = '';
+                        CustomHeaders   : TStringList   = Nil;
+                        Const AResponse : TStream       = Nil;
+                        IgnoreEvents    : Boolean       = False);Overload;
   Procedure   Post     (AUrl            : String        = '';
-                        AContent        : TStream       = Nil;
                         CustomHeaders   : TStringList   = Nil;
                         Const AResponse : TStringStream = Nil;
-                        IgnoreEvents    : Boolean       = False);
+                        IgnoreEvents    : Boolean       = False;
+                        RawHeaders      : Boolean       = False);Overload;
+  Procedure   Post     (AUrl            : String        = '';
+                        CustomHeaders   : TStringList   = Nil;
+                        Const AResponse : TStream       = Nil;
+                        IgnoreEvents    : Boolean       = False;
+                        RawHeaders      : Boolean       = False);Overload;
   Procedure   Put      (AUrl            : String        = '';
-                        AContent        : TStream       = Nil;
                         CustomHeaders   : TStringList   = Nil;
                         Const AResponse : TStringStream = Nil;
                         IgnoreEvents    : Boolean       = False);
   Procedure   Patch    (AUrl            : String        = '';
-                        AContent        : TStream       = Nil;
                         CustomHeaders   : TStringList   = Nil;
                         Const AResponse : TStringStream = Nil;
                         IgnoreEvents    : Boolean       = False);
   Procedure   Delete   (AUrl            : String        = '';
-                        AContent        : TStream       = Nil;
                         CustomHeaders   : TStringList   = Nil;
                         Const AResponse : TStringStream = Nil;
                         IgnoreEvents    : Boolean       = False);
@@ -208,6 +218,7 @@ Type
   Property RequestTimeOut           : Integer                Read vRequestTimeOut           Write vRequestTimeOut;
   Property AllowCookies             : Boolean                Read GetAllowCookies           Write SetAllowCookies;
   Property HandleRedirects          : Boolean                Read GetHandleRedirects        Write SetHandleRedirects;
+  Property RedirectMaximum          : Integer                Read vRedirectMaximum          Write vRedirectMaximum;
   Property VerifyCert               : Boolean                Read GetVerifyCert             Write SetVerifyCert;
   Property AuthOptions              : TServerParams          Read vServerParams             Write vServerParams;
   Property AccessControlAllowOrigin : String                 Read vAccessControlAllowOrigin Write vAccessControlAllowOrigin;
@@ -332,7 +343,7 @@ Begin
  Try
   Case ResquestType Of
    rtGet  : ClientREST.Get (RequestURL, Nil, vResult);
-   rtPost : ClientREST.Post(RequestURL, Nil, Nil, vResult);
+   rtPost : ClientREST.Post(RequestURL, Nil, vResult);
   End;
  Finally
   {$IFDEF FPC}
@@ -466,6 +477,7 @@ Begin
  vServerParams.UserName          := '';
  vServerParams.Password          := '';
  vAccessControlAllowOrigin       := '*';
+ vRedirectMaximum                := 1;
  vDefaultCustomHeader            := TStringList.Create;
  {$IFDEF FPC}
   vRSCharset                     := esUtf8;
@@ -510,6 +522,7 @@ End;
 
 Procedure TDWClientREST.SetUseSSL(Value : Boolean);
 Begin
+ HttpRequest.IOHandler := Nil;
  If Value Then
   Begin
    If ssl = Nil Then
@@ -524,16 +537,10 @@ Begin
    {$if Defined(DELPHI_7)    Or Defined(DELPHI_2007) Or
         Defined(DELPHI_2009) Or Defined(DELPHI_2010)}
     ssl.SSLOptions.Method      := vSSLVersions;
-   {$ifend}
-   {$if defined(DELPHI_XE) or defined(DELPHI_XE2)}
+   {$ELSE}
     ssl.SSLOptions.SSLVersions := vSSLVersions;
-   {$ifend}
-   {$IFDEF DELPHI_XE3_UP}
-    ssl.SSLOptions.SSLVersions := vSSLVersions;
-   {$ENDIF}
-   {$if Defined(FPC)}
-    ssl.SSLOptions.SSLVersions := vSSLVersions;
-   {$ifend}
+   {$IFEND}
+   HttpRequest.IOHandler := ssl;
   End
  Else
   Begin
@@ -543,7 +550,6 @@ Begin
 End;
 
 Procedure TDWClientREST.Delete(AUrl            : String        = '';
-                               AContent        : TStream       = Nil;
                                CustomHeaders   : TStringList   = Nil;
                                Const AResponse : TStringStream = Nil;
                                IgnoreEvents    : Boolean       = False);
@@ -551,9 +557,11 @@ Var
  Temp         : TStringStream;
  vTempHeaders : TStringList;
  tempResponse : TStringStream;
+ SendParams   : TIdMultipartFormDataStream;
 Begin
  Try
   tempResponse := Nil;
+  SendParams   := Nil;
   SetParams(HttpRequest);
   SetUseSSL(vUseSSL);
   vTempHeaders := TStringList.Create;
@@ -571,18 +579,18 @@ Begin
    End;
   Try
    //Copy Custom Headers
-   CopyStringList(TStringList(vDefaultCustomHeader), vTempHeaders);
+  // CopyStringList(TStringList(vDefaultCustomHeader), vTempHeaders);
+   SetHeaders(TStringList(vDefaultCustomHeader));
    If Not IgnoreEvents Then
    If Assigned(vOnBeforeDelete) then
     If Not Assigned(CustomHeaders) Then
-     vOnBeforeDelete(AUrl, AContent, vTempHeaders)
+     vOnBeforeDelete(AUrl, vTempHeaders)
     Else
-     vOnBeforeDelete(AUrl, AContent, CustomHeaders);
+     vOnBeforeDelete(AUrl, CustomHeaders);
    //Copy New Headers
    CopyStringList(CustomHeaders, vTempHeaders);
-   SetHeaders(vTempHeaders);
-   HttpRequest.Request.Source := AContent;
-   HttpRequest.Delete(AUrl);
+   SetHeaders(vTempHeaders, SendParams);
+   HttpRequest.Delete(AUrl, tempResponse);
    If Not IgnoreEvents Then
    If Assigned(vOnAfterRequest) then
     vOnAfterRequest(AUrl, rtDelete, tempResponse);
@@ -636,10 +644,12 @@ Var
  vTempHeaders : TStringList;
  atempResponse,
  tempResponse : TStringStream;
+ SendParams   : TIdMultipartFormDataStream;
 Begin
  Try
   AUrl := StringReplace(AUrl, #012, '', [rfReplaceAll]);
   tempResponse := Nil;
+  SendParams   := Nil;
   SetParams(HttpRequest);
   SetUseSSL(vUseSSL);
   vTempHeaders := TStringList.Create;
@@ -666,7 +676,8 @@ Begin
    End;
   Try
    //Copy Custom Headers
-   CopyStringList(TStringList(vDefaultCustomHeader), vTempHeaders);
+//   CopyStringList(TStringList(vDefaultCustomHeader), vTempHeaders);
+   SetHeaders(TStringList(vDefaultCustomHeader));
    If Not IgnoreEvents Then
    If Assigned(vOnBeforeGet) then
     If Not Assigned(CustomHeaders) Then
@@ -675,7 +686,7 @@ Begin
      vOnBeforeGet(AUrl, CustomHeaders);
    //Copy New Headers
    CopyStringList(CustomHeaders, vTempHeaders);
-   SetHeaders(vTempHeaders);
+   SetHeaders(vTempHeaders, SendParams);
    If Not Assigned(AResponse) Then
     Begin
      HttpRequest.Get(AUrl, atempResponse);
@@ -710,7 +721,81 @@ Begin
     tempResponse.Free;
   End;
  Except
-  Raise;
+  On E : Exception do
+   Begin
+    Exception.Create(E.Message);  //Raise;
+   End;
+ End;
+ If Assigned(atempResponse) Then
+  FreeAndNil(atempResponse);
+End;
+
+procedure TDWClientREST.Get(AUrl            : String;
+                            CustomHeaders   : TStringList;
+                            Const AResponse : TStream;
+                            IgnoreEvents    : Boolean);
+Var
+ temp         : TStringStream;
+ vTempHeaders : TStringList;
+ atempResponse,
+ tempResponse : TMemoryStream;
+ SendParams   : TIdMultipartFormDataStream;
+Begin
+ Try
+  AUrl := StringReplace(AUrl, #012, '', [rfReplaceAll]);
+  tempResponse := Nil;
+  SendParams   := Nil;
+  SetParams(HttpRequest);
+  SetUseSSL(vUseSSL);
+  vTempHeaders := TStringList.Create;
+  atempResponse  := TMemoryStream.Create;
+  If Not Assigned(AResponse) Then
+   tempResponse  := TMemoryStream.Create;
+  Try
+   //Copy Custom Headers
+//   CopyStringList(TStringList(vDefaultCustomHeader), vTempHeaders);
+   SetHeaders(TStringList(vDefaultCustomHeader));
+   If Not IgnoreEvents Then
+   If Assigned(vOnBeforeGet) then
+    If Not Assigned(CustomHeaders) Then
+     vOnBeforeGet(AUrl, vTempHeaders)
+    Else
+     vOnBeforeGet(AUrl, CustomHeaders);
+   //Copy New Headers
+   CopyStringList(CustomHeaders, vTempHeaders);
+   SetHeaders(vTempHeaders, SendParams);
+   If Not Assigned(AResponse) Then
+    Begin
+     HttpRequest.Get(AUrl, atempResponse);
+     atempResponse.Position := 0;
+     tempResponse.CopyFrom(atempResponse, atempResponse.Size);
+     FreeAndNil(atempResponse);
+     tempResponse.Position := 0;
+     If Not IgnoreEvents Then
+     If Assigned(vOnAfterRequest) then
+      vOnAfterRequest(AUrl, rtGet, tempResponse);
+    End
+   Else
+    Begin
+     HttpRequest.Get(AUrl, atempResponse); // AResponse);
+     atempResponse.Position := 0;
+     AResponse.CopyFrom(atempResponse, atempResponse.Size);
+     FreeAndNil(atempResponse);
+     AResponse.Position := 0;
+     If Not IgnoreEvents Then
+     If Assigned(vOnAfterRequest) then
+      vOnAfterRequest(AUrl, rtGet, AResponse);
+    End;
+  Finally
+   vTempHeaders.Free;
+   If Assigned(tempResponse) Then
+    tempResponse.Free;
+  End;
+ Except
+  On E : Exception do
+   Begin
+    Exception.Create(E.Message);  //Raise;
+   End;
  End;
  If Assigned(atempResponse) Then
   FreeAndNil(atempResponse);
@@ -754,7 +839,6 @@ Begin
 End;
 
 Procedure TDWClientREST.Patch(AUrl            : String        = '';
-                              AContent        : TStream       = Nil;
                               CustomHeaders   : TStringList   = Nil;
                               Const AResponse : TStringStream = Nil;
                               IgnoreEvents    : Boolean       = False);
@@ -763,9 +847,11 @@ Var
  vTempHeaders : TStringList;
  atempResponse,
  tempResponse : TStringStream;
+ SendParams   : TIdMultipartFormDataStream;
 Begin
  Try
   tempResponse := Nil;
+  SendParams   := Nil;
   SetParams(HttpRequest);
   SetUseSSL(vUseSSL);
   vTempHeaders := TStringList.Create;
@@ -792,22 +878,23 @@ Begin
    End;
   Try
    //Copy Custom Headers
-   CopyStringList(TStringList(vDefaultCustomHeader), vTempHeaders);
+//   CopyStringList(TStringList(vDefaultCustomHeader), vTempHeaders);
+   SetHeaders(TStringList(vDefaultCustomHeader));
    If Not IgnoreEvents Then
    If Assigned(vOnBeforePatch) then
     If Not Assigned(CustomHeaders) Then
-     vOnBeforePatch(AUrl, AContent, vTempHeaders)
+     vOnBeforePatch(AUrl, vTempHeaders)
     Else
-     vOnBeforePatch(AUrl, AContent, CustomHeaders);
+     vOnBeforePatch(AUrl, CustomHeaders);
    //Copy New Headers
    CopyStringList(CustomHeaders, vTempHeaders);
-   SetHeaders(vTempHeaders);
+   SetHeaders(vTempHeaders, SendParams);
    If Not Assigned(AResponse) Then
     Begin
      {$IFNDEF FPC}{$IF (CompilerVersion = 23) OR (CompilerVersion = 24)}
      //TODO
      {$ELSE}
-      HttpRequest.Patch(AUrl, AContent, atempResponse);
+      HttpRequest.Patch(AUrl, atempResponse);
      {$IFEND}
      {$ENDIF}
      atempResponse.Position := 0;
@@ -826,7 +913,7 @@ Begin
      {$IFNDEF FPC}{$IF (CompilerVersion = 23) OR (CompilerVersion = 24)}
      //TODO
      {$ELSE}
-      HttpRequest.Patch(AUrl, AContent, atempResponse);
+      HttpRequest.Patch(AUrl, atempResponse);
      {$IFEND}
      {$ENDIF}
      atempResponse.Position := 0;
@@ -865,18 +952,110 @@ Begin
   FreeAndNil(atempResponse);
 End;
 
+procedure TDWClientREST.Post(AUrl            : String;
+                             CustomHeaders   : TStringList;
+                             Const AResponse : TStream;
+                             IgnoreEvents,
+                             RawHeaders      : Boolean);
+Var
+ temp         : TStringStream;
+ vTempHeaders : TStringList;
+ atempResponse,
+ tempResponse : TMemoryStream;
+ SendParams   : TIdMultipartFormDataStream;
+Begin
+ SendParams   := TIdMultipartFormDataStream.Create;
+ Try
+  tempResponse := Nil;
+  SetParams(HttpRequest);
+  SetUseSSL(vUseSSL);
+  vTempHeaders := TStringList.Create;
+  atempResponse  := TMemoryStream.Create;
+  If Not Assigned(AResponse) Then
+   tempResponse  := TMemoryStream.Create;
+  Try
+   //Copy Custom Headers
+//   CopyStringList(TStringList(vDefaultCustomHeader), vTempHeaders);
+   SetHeaders(TStringList(vDefaultCustomHeader));
+   If Not IgnoreEvents Then
+   If Assigned(vOnBeforePost) then
+    If Not Assigned(CustomHeaders) Then
+     vOnBeforePost(AUrl, vTempHeaders)
+    Else
+     vOnBeforePost(AUrl, CustomHeaders);
+   //Copy New Headers
+   CopyStringList(CustomHeaders, vTempHeaders);
+   If Not RawHeaders Then
+    SetHeaders(vTempHeaders, SendParams)
+   Else
+    Begin
+     FreeAndNil(SendParams);
+     SetRawHeaders(vTempHeaders, SendParams);
+    End;
+   If Not Assigned(AResponse) Then
+    Begin
+     HttpRequest.Post(AUrl, SendParams, atempResponse);
+     atempResponse.Position := 0;
+     tempResponse.CopyFrom(atempResponse, atempResponse.Size);
+     FreeAndNil(atempResponse);
+     tempResponse.Position := 0;
+     If Not IgnoreEvents Then
+     If Assigned(vOnAfterRequest) then
+      vOnAfterRequest(AUrl, rtPost, tempResponse);
+    End
+   Else
+    Begin
+     temp         := TStringStream.Create(CustomHeaders.Text);
+     HttpRequest.Post(AUrl, temp, atempResponse);
+     atempResponse.Position := 0;
+     AResponse.CopyFrom(atempResponse, atempResponse.Size);
+     FreeAndNil(atempResponse);
+     AResponse.Position := 0;
+     If Not IgnoreEvents Then
+     If Assigned(vOnAfterRequest) then
+      vOnAfterRequest(AUrl, rtPost, AResponse);
+    End;
+  Finally
+   vTempHeaders.Free;
+   If Assigned(tempResponse) Then
+    tempResponse.Free;
+   SendParams.Free;
+   If Assigned(temp) Then
+    temp.Free;
+  End;
+ Except
+  On E: EIdHTTPProtocolException do
+   Begin
+    If (Length(E.ErrorMessage) > 0) Or (E.ErrorCode > 0) then
+     Begin
+      temp := TStringStream.Create(E.ErrorMessage);
+      AResponse.CopyFrom(temp, temp.Size);
+      temp.Free;
+     End;
+   End;
+  On E: EIdSocketError do
+   Begin
+    HttpRequest.Disconnect(false);
+    Raise;
+   End;
+ End;
+ If Assigned(atempResponse) Then
+  FreeAndNil(atempResponse);
+End;
+
 Procedure TDWClientREST.Post(AUrl            : String        = '';
-                             AContent        : TStream       = Nil;
                              CustomHeaders   : TStringList   = Nil;
                              Const AResponse : TStringStream = Nil;
-                             IgnoreEvents    : Boolean       = False);
+                             IgnoreEvents    : Boolean       = False;
+                             RawHeaders      : Boolean       = False);
 Var
  temp         : TStringStream;
  vTempHeaders : TStringList;
  atempResponse,
  tempResponse : TStringStream;
- tempContent  : TMemoryStream;
+ SendParams   : TIdMultipartFormDataStream;
 Begin
+ SendParams   := TIdMultipartFormDataStream.Create;
  Try
   tempResponse := Nil;
   SetParams(HttpRequest);
@@ -903,23 +1082,28 @@ Begin
      {$IFEND}
     {$ENDIF}
    End;
-  If Not Assigned(AContent) Then
-   tempContent := TMemoryStream.Create;
   Try
    //Copy Custom Headers
-   CopyStringList(TStringList(vDefaultCustomHeader), vTempHeaders);
+//   CopyStringList(TStringList(vDefaultCustomHeader), vTempHeaders);
+   SetHeaders(TStringList(vDefaultCustomHeader));
    If Not IgnoreEvents Then
    If Assigned(vOnBeforePost) then
     If Not Assigned(CustomHeaders) Then
-     vOnBeforePost(AUrl, AContent, vTempHeaders)
+     vOnBeforePost(AUrl, vTempHeaders)
     Else
-     vOnBeforePost(AUrl, AContent, CustomHeaders);
+     vOnBeforePost(AUrl, CustomHeaders);
    //Copy New Headers
    CopyStringList(CustomHeaders, vTempHeaders);
-   SetHeaders(vTempHeaders);
+   If Not RawHeaders Then
+    SetHeaders(vTempHeaders, SendParams)
+   Else
+    Begin
+     FreeAndNil(SendParams);
+     SetRawHeaders(vTempHeaders, SendParams);
+    End;
    If Not Assigned(AResponse) Then
     Begin
-     HttpRequest.Post(AUrl, AContent, atempResponse);
+     HttpRequest.Post(AUrl, SendParams, atempResponse);
      atempResponse.Position := 0;
      If vRSCharset = esUtf8 Then
       tempResponse.WriteString(utf8Decode(atempResponse.DataString))
@@ -933,7 +1117,9 @@ Begin
     End
    Else
     Begin
-     HttpRequest.Post(AUrl, AContent, atempResponse);
+     If Assigned(CustomHeaders) then
+      temp         := TStringStream.Create(CustomHeaders.Text);
+     HttpRequest.Post(AUrl, temp, atempResponse);
      atempResponse.Position := 0;
      If vRSCharset = esUtf8 Then
       AResponse.WriteString(utf8Decode(atempResponse.DataString))
@@ -949,8 +1135,9 @@ Begin
    vTempHeaders.Free;
    If Assigned(tempResponse) Then
     tempResponse.Free;
-   If Assigned(tempContent) Then
-    tempContent.Free;
+   SendParams.Free;
+   If Assigned(temp) Then
+    temp.Free;
   End;
  Except
   On E: EIdHTTPProtocolException do
@@ -973,7 +1160,6 @@ Begin
 End;
 
 Procedure TDWClientREST.Put(AUrl            : String        = '';
-                            AContent        : TStream       = Nil;
                             CustomHeaders   : TStringList   = Nil;
                             Const AResponse : TStringStream = Nil;
                             IgnoreEvents    : Boolean       = False);
@@ -982,9 +1168,11 @@ Var
  vTempHeaders : TStringList;
  atempResponse,
  tempResponse : TStringStream;
+ SendParams   : TIdMultipartFormDataStream;
 Begin
  Try
   tempResponse := Nil;
+  SendParams   := Nil;
   SetParams(HttpRequest);
   SetUseSSL(vUseSSL);
   vTempHeaders := TStringList.Create;
@@ -1011,19 +1199,20 @@ Begin
    End;
   Try
    //Copy Custom Headers
-   CopyStringList(TStringList(vDefaultCustomHeader), vTempHeaders);
+//   CopyStringList(TStringList(vDefaultCustomHeader), vTempHeaders);
+   SetHeaders(TStringList(vDefaultCustomHeader));
    If Not IgnoreEvents Then
    If Assigned(vOnBeforePut) then
     If Not Assigned(CustomHeaders) Then
-     vOnBeforePut(AUrl, AContent, vTempHeaders)
+     vOnBeforePut(AUrl, vTempHeaders)
     Else
-     vOnBeforePut(AUrl, AContent, CustomHeaders);
+     vOnBeforePut(AUrl, CustomHeaders);
    //Copy New Headers
    CopyStringList(CustomHeaders, vTempHeaders);
-   SetHeaders(vTempHeaders);
+   SetHeaders(vTempHeaders, SendParams);
    If Not Assigned(AResponse) Then
     Begin
-     HttpRequest.Put(AUrl, AContent, atempResponse);
+     HttpRequest.Put(AUrl, SendParams, atempResponse);
      atempResponse.Position := 0;
      If vRSCharset = esUtf8 Then
       tempResponse.WriteString(utf8Decode(atempResponse.DataString))
@@ -1037,7 +1226,7 @@ Begin
     End
    Else
     Begin
-     HttpRequest.Put(AUrl, AContent, atempResponse);
+     HttpRequest.Put(AUrl, SendParams, atempResponse);
      atempResponse.Position := 0;
      If vRSCharset = esUtf8 Then
       AResponse.WriteString(utf8Decode(atempResponse.DataString))
@@ -1084,7 +1273,7 @@ begin
  HttpRequest.HandleRedirects := Value;
 end;
 
-Procedure TDWClientREST.SetHeaders(AHeaders: TStringList);
+procedure TDWClientREST.SetHeaders(AHeaders: TStringList);
 Var
  I : Integer;
 Begin
@@ -1093,12 +1282,12 @@ Begin
   Begin
    {$IFNDEF FPC}
     {$if CompilerVersion > 21}
-     HttpRequest.Request.CustomHeaders.AddValue('Access-Control-Allow-Origin',   vAccessControlAllowOrigin);
-    {$ELSE}
-     HttpRequest.Request.CustomHeaders.Add     ('Access-Control-Allow-Origin=' + vAccessControlAllowOrigin);
+     HttpRequest.Request.CustomHeaders.AddValue('Access-Control-Allow-Origin', vAccessControlAllowOrigin);
+    {$ELSE}                                    // Ico Menezes 30/07/2018 - para compatibilidade com delphis velhos !
+     HttpRequest.Request.CustomHeaders.AddValue('Access-Control-Allow-Origin', vAccessControlAllowOrigin);
     {$IFEND}
    {$ELSE}
-    HttpRequest.Request.CustomHeaders.AddValue ('Access-Control-Allow-Origin',   vAccessControlAllowOrigin);
+    HttpRequest.Request.CustomHeaders.AddValue('Access-Control-Allow-Origin',  vAccessControlAllowOrigin);
    {$ENDIF}
   End;
  If Assigned(AHeaders) Then
@@ -1107,6 +1296,42 @@ Begin
     Begin
      For i := 0 to AHeaders.Count-1 do
       HttpRequest.Request.CustomHeaders.AddValue(AHeaders.Names[i], AHeaders.ValueFromIndex[i]);
+    End;
+  End;
+End;
+
+Procedure TDWClientREST.SetHeaders(AHeaders       : TStringList;
+                                   Var SendParams : TIdMultipartFormDataStream);
+Var
+ I : Integer;
+Begin
+// HttpRequest.Request.CustomHeaders.Clear;
+ If vAccessControlAllowOrigin <> '' Then
+  Begin
+   If SendParams <> Nil Then
+    Begin
+     {$IFNDEF FPC}
+      {$if CompilerVersion > 21}
+       HttpRequest.Request.CustomHeaders.AddValue('Access-Control-Allow-Origin', vAccessControlAllowOrigin);
+      {$ELSE}                                    // Ico Menezes 30/07/2018 - para compatibilidade com delphis velhos !
+       HttpRequest.Request.CustomHeaders.AddValue('Access-Control-Allow-Origin', vAccessControlAllowOrigin);
+      {$IFEND}
+     {$ELSE}
+      HttpRequest.Request.CustomHeaders.AddValue('Access-Control-Allow-Origin',  vAccessControlAllowOrigin);
+     {$ENDIF}
+    End;
+  End;
+ If Assigned(AHeaders) Then
+  Begin
+   If AHeaders.Count > 0 Then
+    Begin
+     For i := 0 to AHeaders.Count-1 do
+      Begin
+       If SendParams = Nil Then
+        HttpRequest.Request.CustomHeaders.AddValue(AHeaders.Names[i], AHeaders.ValueFromIndex[i])
+       Else
+        SendParams.AddFormField(AHeaders.Names[i],  AHeaders.ValueFromIndex[i]);
+      End;
     End;
   End;
 End;
@@ -1174,6 +1399,7 @@ begin
  aHttpRequest.Request.ContentType               := HttpRequest.Request.ContentType;
  aHttpRequest.AllowCookies                      := HttpRequest.AllowCookies;
  aHttpRequest.HandleRedirects                   := HttpRequest.HandleRedirects;
+ aHttpRequest.RedirectMaximum                   := vRedirectMaximum;
  aHttpRequest.HTTPOptions                       := HttpRequest.HTTPOptions;
  If vRSCharset = esUtf8 Then
   Begin
@@ -1195,5 +1421,42 @@ begin
  aHttpRequest.Request.UserAgent                 := vUserAgent;
  aHttpRequest.MaxAuthRetries                    := 0;
 end;
+
+procedure TDWClientREST.SetRawHeaders(AHeaders: TStringList;
+  var SendParams: TIdMultipartFormDataStream);
+Var
+ I : Integer;
+Begin
+ HttpRequest.Request.RawHeaders.Clear;
+// HttpRequest.Request.CustomHeaders.Clear;
+ If vAccessControlAllowOrigin <> '' Then
+  Begin
+   If SendParams <> Nil Then
+    Begin
+     {$IFNDEF FPC}
+      {$if CompilerVersion > 21}
+       SendParams.AddFormField('Access-Control-Allow-Origin', vAccessControlAllowOrigin);
+      {$ELSE}                                    // Ico Menezes 30/07/2018 - para compatibilidade com delphis velhos !
+       SendParams.AddFormField('Access-Control-Allow-Origin', vAccessControlAllowOrigin);
+      {$IFEND}
+     {$ELSE}
+      SendParams.AddFormField('Access-Control-Allow-Origin',  vAccessControlAllowOrigin);
+     {$ENDIF}
+    End;
+  End;
+ If Assigned(AHeaders) Then
+  Begin
+   If AHeaders.Count > 0 Then
+    Begin
+     For i := 0 to AHeaders.Count-1 do
+      Begin
+       If SendParams = Nil Then
+        HttpRequest.Request.RawHeaders.Add(AHeaders[i])
+       Else
+        SendParams.AddFormField(AHeaders.Names[i],  AHeaders.ValueFromIndex[i]);
+      End;
+    End;
+  End;
+End;
 
 end.

@@ -4,8 +4,8 @@ object ServerMethodDM: TServerMethodDM
   Encoding = esUtf8
   OnWelcomeMessage = ServerMethodDataModuleWelcomeMessage
   OnMassiveProcess = ServerMethodDataModuleMassiveProcess
-  Height = 178
-  Width = 264
+  Height = 185
+  Width = 263
   object RESTDWPoolerDB1: TRESTDWPoolerDB
     RESTDriver = RESTDWDriverFD1
     Compression = True
@@ -250,22 +250,50 @@ object ServerMethodDM: TServerMethodDM
           end>
         ContentType = 'text/html'
         ContextName = 'init'
+        ContextRoutes = [crAll]
         OnReplyRequest = DWServerContext1ContextListinitReplyRequest
       end
       item
         DWParams = <>
         ContentType = 'text/html'
         ContextName = 'index'
+        ContextRoutes = [crAll]
         OnReplyRequest = DWServerContext1ContextListindexReplyRequest
       end
       item
         DWParams = <>
         ContentType = 'text/html'
         ContextName = 'openfile'
+        ContextRoutes = [crAll]
         OnReplyRequestStream = DWServerContext1ContextListopenfileReplyRequestStream
+      end
+      item
+        DWParams = <>
+        ContentType = 'text/html'
+        ContextName = 'php'
+        ContextRoutes = [crAll]
+        OnReplyRequest = DWServerContext1ContextListphpReplyRequest
+      end
+      item
+        DWParams = <>
+        ContentType = 'text/html'
+        ContextName = 'angular'
+        ContextRoutes = [crAll]
+        OnReplyRequest = DWServerContext1ContextListangularReplyRequest
+      end
+      item
+        DWParams = <>
+        ContentType = 'text/html'
+        ContextName = 'zsend'
+        ContextRoutes = [crAll]
+        OnReplyRequest = DWServerContext1ContextListzsendReplyRequest
       end>
     BaseContext = 'www'
-    Left = 184
-    Top = 104
+    Left = 137
+    Top = 103
+  end
+  object FDPhysPgDriverLink1: TFDPhysPgDriverLink
+    Left = 193
+    Top = 59
   end
 end

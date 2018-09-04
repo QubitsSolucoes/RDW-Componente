@@ -53,6 +53,8 @@ Type
  TDWReplyRequestStream = Procedure(Const Params       : TDWParams;
                                    Var   ContentType  : String;
                                    Var   Result       : TMemoryStream) Of Object;
+ TDWContextRoute  = (crAll, crGet, crPost, crPut, crDelete);
+ TDWContextRoutes = Set of TDWContextRoute;
 
 Type
  TDWReplyRequestData = Class(TComponent)
@@ -113,11 +115,13 @@ Type
  TDWContext = Class(TCollectionItem)
  Protected
  Private
+  vDefaultHtml                    : TStringList;
   FName,
-  vContentType                  : String;
-  vDWParams                     : TDWParamsMethods;
-  vOwnerCollection              : TCollection;
+  vContentType                    : String;
+  vDWParams                       : TDWParamsMethods;
+  vOwnerCollection                : TCollection;
   DWReplyRequestData              : TDWReplyRequestData;
+  vDWContextRoutes                : TDWContextRoutes;
   Function  GetReplyRequest       : TDWReplyRequest;
   Procedure SetReplyRequest(Value : TDWReplyRequest);
   Function  GetReplyRequestStream       : TDWReplyRequestStream;
@@ -133,6 +137,8 @@ Type
   Property    DWParams             : TDWParamsMethods       Read vDWParams              Write vDWParams;
   Property    ContentType          : String                 Read vContentType           Write vContentType;
   Property    ContextName          : String                 Read GetDisplayName         Write SetDisplayName;
+  Property    DefaultHtml          : TStringList            Read vDefaultHtml           Write vDefaultHtml;
+  Property    ContextRoutes        : TDWContextRoutes       Read vDWContextRoutes       Write vDWContextRoutes;
   Property    OnReplyRequest       : TDWReplyRequest        Read GetReplyRequest        Write SetReplyRequest;
   Property    OnReplyRequestStream : TDWReplyRequestStream  Read GetReplyRequestStream  Write SetReplyRequestStream;
 End;
@@ -195,18 +201,21 @@ End;
 constructor TDWContext.Create(aCollection: TCollection);
 begin
   inherited;
-  vDWParams        := TDWParamsMethods.Create(aCollection, TDWParamMethod);
-  vContentType     := 'text/html';
-  DWReplyRequestData := TDWReplyRequestData.Create(Nil);
-  vOwnerCollection := aCollection;
-  FName            := 'dwcontext' + IntToStr(aCollection.Count);
+  vDWParams               := TDWParamsMethods.Create(aCollection, TDWParamMethod);
+  vContentType            := 'text/html';
+  DWReplyRequestData      := TDWReplyRequestData.Create(Nil);
+  vOwnerCollection        := aCollection;
+  FName                   := 'dwcontext' + IntToStr(aCollection.Count);
   DWReplyRequestData.Name := FName;
+  vDWContextRoutes        := [crAll];
+  vDefaultHtml            := TStringList.Create;
 end;
 
 destructor TDWContext.Destroy;
 begin
   vDWParams.Free;
   DWReplyRequestData.Free;
+  vDefaultHtml.Free;
   inherited;
 end;
 

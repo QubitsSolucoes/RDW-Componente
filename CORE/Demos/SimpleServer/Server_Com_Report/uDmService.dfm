@@ -1,8 +1,7 @@
 object ServerMethodDM: TServerMethodDM
   OldCreateOrder = False
   OnCreate = ServerMethodDataModuleCreate
-  OnReplyEvent = ServerMethodDataModuleReplyEvent
-  OnWelcomeMessage = ServerMethodDataModuleWelcomeMessage
+  Encoding = esASCII
   Height = 220
   Width = 366
   object RESTDWPoolerDB1: TRESTDWPoolerDB
@@ -63,7 +62,7 @@ object ServerMethodDM: TServerMethodDM
     Top = 144
   end
   object frxReport1: TfrxReport
-    Version = '5.4.6'
+    Version = '5.3.14'
     DotMatrixReport = False
     IniFile = '\Software\Fast Reports'
     PreviewOptions.Buttons = [pbPrint, pbLoad, pbSave, pbExport, pbZoom, pbFind, pbOutline, pbPageSetup, pbTools, pbEdit, pbNavigator, pbExportQuick]

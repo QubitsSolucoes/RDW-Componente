@@ -26,7 +26,6 @@ Uses
   Vcl.Mask,
   Vcl.Menus,
   URESTDWBase,
-  ServerMethodsUnit1,
   Vcl.ComCtrls,
   FireDAC.Phys.FBDef,
   FireDAC.UI.Intf,
@@ -49,7 +48,7 @@ Uses
   IdBaseComponent,
   IdTCPConnection,
   IdTCPClient,
-  IdHTTP;
+  IdHTTP, uDWAbout;
 
 type
   TRestDWForm = class(TForm)
@@ -462,9 +461,7 @@ Begin
     RESTServicePooler1.SSLPrivateKeyFile     := EPrivKeyFile.Text;
     RESTServicePooler1.SSLPrivateKeyPassword := EPrivKeyPass.Text;
     RESTServicePooler1.SSLCertFile           := ECertFile.Text;
-    RESTServicePooler1.EncodeStrings         := CbEncode.Checked;
     RESTServicePooler1.Active                := True;
-    RESTServicePooler1.DataCompression       := CheckBox1.Checked;
     If Not RESTServicePooler1.Active Then
       Exit;
     PageControl1.ActivePage := TsLogs;

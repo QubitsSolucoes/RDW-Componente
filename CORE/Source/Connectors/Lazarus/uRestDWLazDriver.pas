@@ -7,7 +7,8 @@ uses SysUtils, Classes, DB, sqldb,       mssqlconn,     pqconnection,
      mysql50conn,       mysql51conn,     mysql55conn,   mysql56conn,
      mysql57conn,       sqlite3conn,     ibconnection,  uDWConsts,
      uDWConstsData,     uRESTDWPoolerDB, uDWJSONObject, uDWMassiveBuffer,
-     uDWJSON,           SysTypes,        uDWDatamodule, Variants;
+     uDWJSON,           SysTypes,        uDWDatamodule, Variants,
+     uSystemEvents;
 
 Type
 
@@ -32,12 +33,12 @@ Type
   Function ExecuteCommand       (SQL              : String;
                                  Var Error        : Boolean;
                                  Var MessageError : String;
-                                 Execute          : Boolean = False) : TJSONValue;Overload;Override;
+                                 Execute          : Boolean = False) : String;Overload;Override;
   Function ExecuteCommand       (SQL              : String;
                                  Params           : TDWParams;
                                  Var Error        : Boolean;
                                  Var MessageError : String;
-                                 Execute          : Boolean = False) : TJSONValue;Overload;Override;
+                                 Execute          : Boolean = False) : String;Overload;Override;
   Function InsertMySQLReturnID  (SQL              : String;
                                  Var Error        : Boolean;
                                  Var MessageError : String) : Integer;Overload;Override;
@@ -52,6 +53,9 @@ Type
   Procedure ExecuteProcedurePure(ProcName         : String;
                                  Var Error        : Boolean;
                                  Var MessageError : String);Override;
+  Class Procedure CreateConnection(Const ConnectionDefs : TConnectionDefs;
+                                   Var   Connection     : TObject);        Override;
+  Procedure PrepareConnection     (Var   ConnectionDefs : TConnectionDefs);Override;
   Procedure Close;Override;
  Published
   Property Connection : TComponent Read GetConnection Write SetConnection;
@@ -112,13 +116,15 @@ function TRESTDWLazDriver.ExecuteCommand(SQL              : String;
                                          Params           : TDWParams;
                                          Var Error        : Boolean;
                                          Var MessageError : String;
-                                         Execute          : Boolean) : TJSONValue;
+                                         Execute          : Boolean) : String;
 Var
  vTempQuery    : TSQLQuery;
  ATransaction  : TSQLTransaction;
  A, I          : Integer;
  vParamName    : String;
  vStringStream : TMemoryStream;
+ DataBase      : TDatabase;
+ aResult       : TJSONValue;
  Function GetParamIndex(Params : TParams; ParamName : String) : Integer;
  Var
   I : Integer;
@@ -134,9 +140,12 @@ Var
    End;
  End;
 Begin
- Result := Nil;
+ Result := '';
  Error  := False;
- Result := TJSONValue.Create;
+ aResult := TJSONValue.Create;
+ {$IFDEF FPC}
+  aResult.DatabaseCharSet := DatabaseCharSet;
+ {$ENDIF}
  vTempQuery               := TSQLQuery.Create(Nil);
  Try
   If Assigned(vConnection) Then
@@ -254,12 +263,11 @@ Begin
   If Not Execute Then
    Begin
     vTempQuery.Active := True;
-    Result := TJSONValue.Create;
-    Result.Encoded         := True;
-    Result.Encoding        := Encoding;
-    Result.DatabaseCharSet := DatabaseCharSet;
+    aResult.Encoded         := True;
+    aResult.Encoding        := Encoding;
     Try
-     Result.LoadFromDataset('RESULTDATA', vTempQuery, EncodeStringsJSON);
+     aResult.LoadFromDataset('RESULTDATA', vTempQuery, EncodeStringsJSON);
+     Result := aResult.ToJSON;
     Finally
     End;
    End
@@ -268,12 +276,11 @@ Begin
     ATransaction.DataBase := TDatabase(vConnection);
     ATransaction.StartTransaction;;
     vTempQuery.ExecSQL;
-    Result := TJSONValue.Create;
-    Result.Encoded         := True;
-    Result.Encoding        := Encoding;
-    Result.DatabaseCharSet := DatabaseCharSet;
-    Result.SetValue('COMMANDOK');
+    aResult.Encoded         := True;
+    aResult.Encoding        := Encoding;
     ATransaction.Commit;
+    aResult.SetValue('COMMANDOK');
+    Result := aResult.ToJSON;
    End;
  Except
   On E : Exception do
@@ -281,15 +288,17 @@ Begin
     Try
      Error        := True;
      MessageError := E.Message;
-     Result.Encoded         := True;
-     Result.Encoding        := Encoding;
-     Result.DatabaseCharSet := DatabaseCharSet;
-     Result.SetValue(GetPairJSON('NOK', MessageError));
+     aResult.Encoded         := True;
+     aResult.Encoding        := Encoding;
+     aResult.DatabaseCharSet := DatabaseCharSet;
      ATransaction.Rollback;
+     aResult.SetValue(GetPairJSON('NOK', MessageError));
+     Result := aResult.ToJSON;
     Except
     End;
    End;
  End;
+ FreeAndNil(aResult);
  vTempQuery.Close;
  FreeAndNil(vTempQuery);
  FreeAndNil(ATransaction);
@@ -306,6 +315,199 @@ procedure TRESTDWLazDriver.ExecuteProcedurePure(ProcName         : String;
                                                Var Error        : Boolean;
                                                Var MessageError : String);
 Begin
+End;
+
+class procedure TRESTDWLazDriver.CreateConnection(
+  const ConnectionDefs: TConnectionDefs; Var Connection: TObject);
+ Procedure ServerParamValue(ParamName, Value : String);
+ Var
+  I, vIndex : Integer;
+  vFound : Boolean;
+ Begin
+  vFound := False;
+  vIndex := -1;
+  For I := 0 To TSQLConnection(Connection).Params.Count -1 Do
+   Begin
+    If Lowercase(TSQLConnection(Connection).Params.Names[I]) = Lowercase(ParamName) Then
+     Begin
+      vFound := True;
+      vIndex := I;
+      Break;
+     End;
+   End;
+  If Not (vFound) Then
+   TSQLConnection(Connection).Params.Add(Format('%s=%s', [Lowercase(ParamName), Lowercase(Value)]))
+  Else
+   TSQLConnection(Connection).Params[vIndex] := Format('%s=%s', [Lowercase(ParamName), Lowercase(Value)]);
+ End;
+Begin
+ If Assigned(ConnectionDefs) Then
+  Begin
+   Case ConnectionDefs.DriverType Of
+    dbtUndefined  : Begin
+
+                    End;
+    dbtAccess     : Begin
+//                     TSQLConnection(Connection). DriverName := 'MSAcc';
+
+                    End;
+    dbtDbase      : Begin
+
+                    End;
+    dbtFirebird   : Begin
+//                     TFDConnection(Connection).DriverName := 'FB';
+                     ServerParamValue('Server',    ConnectionDefs.HostName);
+                     ServerParamValue('Port',      IntToStr(ConnectionDefs.dbPort));
+                     ServerParamValue('Database',  ConnectionDefs.DatabaseName);
+                     ServerParamValue('User_Name', ConnectionDefs.Username);
+                     ServerParamValue('Password',  ConnectionDefs.Password);
+                     ServerParamValue('Protocol',  Uppercase(ConnectionDefs.Protocol));
+                    End;
+    dbtInterbase  : Begin
+//                     TFDConnection(Connection).DriverName := 'IB';
+                     ServerParamValue('Server',    ConnectionDefs.HostName);
+                     ServerParamValue('Port',      IntToStr(ConnectionDefs.dbPort));
+                     ServerParamValue('Database',  ConnectionDefs.DatabaseName);
+                     ServerParamValue('User_Name', ConnectionDefs.Username);
+                     ServerParamValue('Password',  ConnectionDefs.Password);
+                     ServerParamValue('Protocol',  Uppercase(ConnectionDefs.Protocol));
+                    End;
+    dbtMySQL      : Begin
+//                     TFDConnection(Connection).DriverName := 'MYSQL';
+
+                    End;
+    dbtSQLLite    : Begin
+//                     TFDConnection(Connection).DriverName := 'SQLLite';
+
+                    End;
+    dbtOracle     : Begin
+//                     TFDConnection(Connection).DriverName := 'Ora';
+
+                    End;
+    dbtMsSQL      : Begin
+//                     TFDConnection(Connection).DriverName := 'MSSQL';
+                     ServerParamValue('DriverID',  ConnectionDefs.DriverID);
+                     ServerParamValue('Server',    ConnectionDefs.HostName);
+                     ServerParamValue('Port',      IntToStr(ConnectionDefs.dbPort));
+                     ServerParamValue('Database',  ConnectionDefs.DatabaseName);
+                     ServerParamValue('User_Name', ConnectionDefs.Username);
+                     ServerParamValue('Password',  ConnectionDefs.Password);
+                     ServerParamValue('Protocol',  Uppercase(ConnectionDefs.Protocol));
+
+                    End;
+    dbtODBC       : Begin
+//                     TFDConnection(Connection).DriverName := 'ODBC';
+                     ServerParamValue('DataSource', ConnectionDefs.DataSource);
+                    End;
+    dbtParadox    : Begin
+
+                    End;
+    dbtPostgreSQL : Begin
+//                     TFDConnection(Connection).DriverName := 'PG';
+
+                    End;
+   End;
+  End;
+End;
+
+procedure TRESTDWLazDriver.PrepareConnection(Var ConnectionDefs: TConnectionDefs
+  );
+ Procedure ServerParamValue(ParamName, Value : String);
+ Var
+  I, vIndex : Integer;
+  vFound : Boolean;
+ Begin
+  vFound := False;
+  vIndex := -1;
+  For I := 0 To TSQLConnection(Connection).Params.Count -1 Do
+   Begin
+    If Lowercase(TSQLConnection(Connection).Params.Names[I]) = Lowercase(ParamName) Then
+     Begin
+      vFound := True;
+      vIndex := I;
+      Break;
+     End;
+   End;
+  If Not (vFound) Then
+   TSQLConnection(Connection).Params.Add(Format('%s=%s', [ParamName, Value]))
+  Else
+   TSQLConnection(Connection).Params[vIndex] := Format('%s=%s', [ParamName, Value]);
+ End;
+Begin
+ If Assigned(ConnectionDefs) Then
+  Begin
+   Case ConnectionDefs.DriverType Of
+    dbtUndefined  : Begin
+
+                    End;
+    dbtAccess     : Begin
+//                     TSQLConnection(Connection).DriverName := 'MSAcc';
+
+                    End;
+    dbtDbase      : Begin
+
+                    End;
+    dbtFirebird   : Begin
+//                     TSQLConnection(Connection).DriverName := 'FB';
+                     If Assigned(OnPrepareConnection) Then
+                      OnPrepareConnection(ConnectionDefs);
+                     ServerParamValue('Server',    ConnectionDefs.HostName);
+                     ServerParamValue('Port',      IntToStr(ConnectionDefs.dbPort));
+                     ServerParamValue('Database',  ConnectionDefs.DatabaseName);
+                     ServerParamValue('User_Name', ConnectionDefs.Username);
+                     ServerParamValue('Password',  ConnectionDefs.Password);
+                     ServerParamValue('Protocol',  Uppercase(ConnectionDefs.Protocol));
+                    End;
+    dbtInterbase  : Begin
+//                     TSQLConnection(Connection).DriverName := 'IB';
+                     If Assigned(OnPrepareConnection) Then
+                      OnPrepareConnection(ConnectionDefs);
+                     ServerParamValue('Server',    ConnectionDefs.HostName);
+                     ServerParamValue('Port',      IntToStr(ConnectionDefs.dbPort));
+                     ServerParamValue('Database',  ConnectionDefs.DatabaseName);
+                     ServerParamValue('User_Name', ConnectionDefs.Username);
+                     ServerParamValue('Password',  ConnectionDefs.Password);
+                     ServerParamValue('Protocol',  Uppercase(ConnectionDefs.Protocol));
+                    End;
+    dbtMySQL      : Begin
+//                     TSQLConnection(Connection).DriverName := 'MYSQL';
+
+                    End;
+    dbtSQLLite    : Begin
+//                     TSQLConnection(Connection).DriverName := 'SQLLite';
+
+                    End;
+    dbtOracle     : Begin
+//                     TSQLConnection(Connection).DriverName := 'Ora';
+
+                    End;
+    dbtMsSQL      : Begin
+//                     TSQLConnection(Connection).DriverName := 'MSSQL';
+                     If Assigned(OnPrepareConnection) Then
+                      OnPrepareConnection(ConnectionDefs);
+                     ServerParamValue('DriverID',  ConnectionDefs.DriverID);
+                     ServerParamValue('Server',    ConnectionDefs.HostName);
+                     ServerParamValue('Port',      IntToStr(ConnectionDefs.dbPort));
+                     ServerParamValue('Database',  ConnectionDefs.DatabaseName);
+                     ServerParamValue('User_Name', ConnectionDefs.Username);
+                     ServerParamValue('Password',  ConnectionDefs.Password);
+                     ServerParamValue('Protocol',  Uppercase(ConnectionDefs.Protocol));
+                    End;
+    dbtODBC       : Begin
+//                     TSQLConnection(Connection).DriverName := 'ODBC';
+                     If Assigned(OnPrepareConnection) Then
+                      OnPrepareConnection(ConnectionDefs);
+                     ServerParamValue('DataSource', ConnectionDefs.DataSource);
+                    End;
+    dbtParadox    : Begin
+
+                    End;
+    dbtPostgreSQL : Begin
+//                     TSQLConnection(Connection).DriverName := 'PG';
+
+                    End;
+   End;
+  End;
 End;
 
 function TRESTDWLazDriver.ApplyUpdates(Massive, SQL: String; Params: TDWParams;
@@ -960,9 +1162,8 @@ Begin
  End;
 End;
 
-Procedure TRESTDWLazDriver.ApplyUpdates_MassiveCache(MassiveCache     : String;
-                                                     Var Error        : Boolean;
-                                                     Var MessageError : String);
+procedure TRESTDWLazDriver.ApplyUpdates_MassiveCache(MassiveCache: String;
+  Var Error: Boolean; Var MessageError: String);
 Var
  vTempQuery     : TSQLQuery;
  ATransaction   : TSQLTransaction;
@@ -1477,12 +1678,13 @@ Begin
 End;
 
 function TRESTDWLazDriver.ExecuteCommand(SQL: String; Var Error: Boolean;
-  Var MessageError: String; Execute: Boolean): TJSONValue;
+  Var MessageError: String; Execute: Boolean): String;
 Var
  vTempQuery   : TSQLQuery;
  ATransaction : TSQLTransaction;
+ aResult      : TJSONValue;
 Begin
- Result := Nil;
+ Result := '';
  Error  := False;
  vTempQuery               := TSQLQuery.Create(Nil);
  Try
@@ -1508,12 +1710,14 @@ Begin
   If Not Execute Then
    Begin
     vTempQuery.Open;
-    Result         := TJSONValue.Create;
-    Result.Encoded         := True;
-    Result.Encoding        := Encoding;
-    Result.DatabaseCharSet := DatabaseCharSet;
+    aResult         := TJSONValue.Create;
+    aResult.Encoded         := True;
+    aResult.Encoding        := Encoding;
+    aResult.DatabaseCharSet := DatabaseCharSet;
     Try
-     Result.LoadFromDataset('RESULTDATA', vTempQuery, EncodeStringsJSON);
+     aResult.LoadFromDataset('RESULTDATA', vTempQuery, EncodeStringsJSON);
+     Result        := aResult.ToJSON;
+     FreeAndNil(aResult);
      Error         := False;
     Finally
     End;
@@ -1524,12 +1728,16 @@ Begin
      ATransaction.DataBase := TDatabase(vConnection);
      ATransaction.StartTransaction;;
      vTempQuery.ExecSQL;
-     Result := TJSONValue.Create;
-     Result.Encoded         := True;
-     Result.Encoding        := Encoding;
-     Result.DatabaseCharSet := DatabaseCharSet;
-     Result.SetValue('COMMANDOK');
+     aResult := TJSONValue.Create;
+     aResult.Encoded         := True;
+     aResult.Encoding        := Encoding;
+     {$IFDEF FPC}
+      aResult.DatabaseCharSet := DatabaseCharSet;
+     {$ENDIF}
      ATransaction.Commit;
+     aResult.SetValue('COMMANDOK');
+     Result                  := aResult.ToJSON;
+     FreeAndNil(aResult);
      Error         := False;
     Finally
     End;
@@ -1540,12 +1748,16 @@ Begin
     Try
      Error        := True;
      MessageError := E.Message;
-     Result := TJSONValue.Create;
-     Result.Encoded         := True;
-     Result.Encoding        := Encoding;
-     Result.DatabaseCharSet := DatabaseCharSet;
-     Result.SetValue(GetPairJSON('NOK', MessageError));
+     aResult := TJSONValue.Create;
+     aResult.Encoded         := True;
+     aResult.Encoding        := Encoding;
+     {$IFDEF FPC}
+      aResult.DatabaseCharSet := DatabaseCharSet;
+     {$ENDIF}
      ATransaction.Rollback;
+     aResult.SetValue(GetPairJSON('NOK', MessageError));
+     Result                  := aResult.ToJSON;
+     FreeAndNil(aResult);
     Except
     End;
    End;
